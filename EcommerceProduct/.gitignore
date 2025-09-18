@@ -23,6 +23,18 @@ bld/
 [Ll]og/
 [Ll]ogs/
 
+# IDE and tool settings
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# GitHub Copilot cache
+CopilotIndices/
+
+
 # .NET Core
 project.lock.json
 project.fragment.lock.json

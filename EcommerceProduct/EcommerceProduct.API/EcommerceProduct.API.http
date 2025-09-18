@@ -1,0 +1,24 @@
+@EcommerceProduct.API_HostAddress = https://localhost:7032
+# Create a JWT token using the .NET CLI command below and replace YOUR_JWT_TOKEN with the generated token.
+# dotnet user-jwts create --issuer https://localhost:7032 --audience ecommerceproductapi
+@jwtToken = YOUR_JWT_TOKEN
+
+GET {{EcommerceProduct.API_HostAddress}}/weatherforecast/
+Accept: application/json
+Authorization: Bearer {{jwtToken}}
+
+
+### 1. Get all customers
+GET {{EcommerceProduct.API_HostAddress}}/api/customers
+Accept: application/json
+Authorization: Bearer {{jwtToken}}
+
+### 6. User Authentication (POST request to obtain JWT token)
+POST {{EcommerceProduct.API_HostAddress}}/api/authentication/authenticate
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username": "testuser",
+  "password": "testpassword"
+}
