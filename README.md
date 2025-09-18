@@ -86,7 +86,9 @@ dotnet user-jwts create --issuer https://localhost:7032 --audience ecommerceprod
 This will generate a JWT token that you can use for authentication. Copy the token for API testing.
 
 Note:
+
 - To generate a new token with claims, use the `--claims` option.
+
 ``` bash
 dotnet user-jwts create --issuer https://localhost:7032 --audience ecommerceproductapi --claims "city=Altares"
 ```
@@ -107,9 +109,50 @@ The API will be available at:
 
 This API uses JWT Bearer token authentication. All endpoints (except authentication endpoints) require a valid JWT token.
 
+### User Registration & Authentication
+
+This API supports two authentication methods:
+
+#### Method 1: User Registration & Login (Recommended)
+
+1. **Register a New User**:
+
+```bash
+POST https://localhost:7032/api/authentication/register
+Content-Type: application/json
+
+{
+  "username": "your_username",
+  "email": "your@email.com", 
+  "password": "SecurePassword123!",
+  "firstName": "Your",
+  "lastName": "Name",
+  "city": "YourCity"
+}
+```
+
+2. **Login to Get Token**:
+
+```bash
+POST https://localhost:7032/api/authentication/login
+Content-Type: application/json
+
+{
+  "username": "your_username",
+  "password": "SecurePassword123!"
+}
+```
+
+#### Method 2: Development Tokens (For Testing)
+
+```bash
+# Create a development JWT token
+dotnet user-jwts create --issuer https://localhost:7032 --audience ecommerceproductapi
+```
+
 ### How to Authenticate
 
-1. **Get a Token**: Use the command above or call the authentication endpoint
+1. **Get a Token**: Register & login or use the dotnet command above
 2. **Include in Requests**: Add the token to the `Authorization` header:
 
 ```http
@@ -128,7 +171,9 @@ Accept: application/json
 
 ### Authentication
 
-- `POST /api/authentication/authenticate` - User authenticate
+- `POST /api/authentication/register` - Register new user
+- `POST /api/authentication/login` - User login (returns token + user info)
+- `POST /api/authentication/authenticate` - User Authentication (POST request to obtain JWT token)
 
 ### Customers
 

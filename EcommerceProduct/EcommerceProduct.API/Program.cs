@@ -32,8 +32,10 @@ builder.Services.AddDbContext<ProductContext>(dbContextOptions =>
     dbContextOptions.UseSqlite(builder.Configuration.GetConnectionString("ProductDBConnectionString"));
 });
 
-// Register repository
+// Register repository and services
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 // Configure AutoMapper
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());

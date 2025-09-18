@@ -11,6 +11,7 @@ namespace EcommerceProduct.API.DbContexts
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<User> Users { get; set; }
 
         public ProductContext(DbContextOptions<ProductContext> options)
             : base(options)
@@ -21,6 +22,21 @@ namespace EcommerceProduct.API.DbContexts
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // Configure User
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Username)
+                .IsUnique();
+
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Email)
+                .IsUnique();
+
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Customer)
+                .WithMany()
+                .HasForeignKey(u => u.CustomerId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             // Configure ProductCategory
             modelBuilder.Entity<ProductCategory>()
                 .HasIndex(c => c.Name)
