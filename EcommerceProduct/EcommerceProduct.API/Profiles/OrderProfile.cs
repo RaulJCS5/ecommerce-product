@@ -16,6 +16,32 @@ namespace EcommerceProduct.API.Profiles
             CreateMap<OrderItem, OrderItemDto>()
                 .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product!.Name))
                 .ForMember(dest => dest.TotalPrice, opt => opt.MapFrom(src => src.Quantity * src.UnitPrice));
+
+            CreateMap<OrderForCreationDto, Order>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.OrderNumber, opt => opt.Ignore())
+                .ForMember(dest => dest.OrderDate, opt => opt.Ignore())
+                .ForMember(dest => dest.TotalAmount, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.Ignore())
+                .ForMember(dest => dest.CustomerId, opt => opt.Ignore())
+                .ForMember(dest => dest.Customer, opt => opt.Ignore())
+                .ForMember(dest => dest.OrderItems, opt => opt.Ignore());
+
+            CreateMap<OrderForUpdateDto, Order>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.OrderNumber, opt => opt.Ignore())
+                .ForMember(dest => dest.OrderDate, opt => opt.Ignore())
+                .ForMember(dest => dest.TotalAmount, opt => opt.Ignore())
+                .ForMember(dest => dest.CustomerId, opt => opt.Ignore())
+                .ForMember(dest => dest.Customer, opt => opt.Ignore())
+                .ForMember(dest => dest.OrderItems, opt => opt.Ignore());
+
+            CreateMap<OrderItemForCreationDto, OrderItem>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.UnitPrice, opt => opt.Ignore())
+                .ForMember(dest => dest.OrderId, opt => opt.Ignore())
+                .ForMember(dest => dest.Order, opt => opt.Ignore())
+                .ForMember(dest => dest.Product, opt => opt.Ignore());
         }
     }
 }

@@ -35,6 +35,7 @@ namespace EcommerceProduct.API.Controllers
         /// <param name="pageSize">Page size for pagination</param>
         /// <returns>List of products</returns>
         [HttpGet]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<ProductDto>>> GetProducts(
             [FromQuery] string? name,
             [FromQuery] string? searchQuery,
@@ -65,13 +66,14 @@ namespace EcommerceProduct.API.Controllers
         /// <param name="includeReviews">Whether to include product reviews</param>
         /// <returns>Product details</returns>
         [HttpGet("{productId}", Name = "GetProduct")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetProduct(int productId, bool includeReviews = false)
         {
             var product = await _productRepository.GetProductAsync(productId, includeReviews);
 
             if (product == null)
             {
-                return NotFound();
+                return NotFound("Product not found.");
             }
 
             if (includeReviews)
@@ -83,78 +85,148 @@ namespace EcommerceProduct.API.Controllers
         }
 
         /// <summary>
-        /// Create a new product
+        /// Create a new product (Admin only)
         /// </summary>
         /// <param name="product">Product creation data</param>
         /// <returns>Created product</returns>
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<ProductDto>> CreateProduct(ProductForCreationDto product)
         {
-            // Validate category exists
-            if (!await _productRepository.ProductCategoryExistsAsync(product.CategoryId))
+            try
             {
-                return BadRequest("Category does not exist.");
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                // Validate category exists
+                if (!await _productRepository.ProductCategoryExistsAsync(product.CategoryId))
+                {
+                    return BadRequest("Category does not exist.");
+                }
+
+                var productEntity = _mapper.Map<Entities.Product>(product);
+                _productRepository.AddProductAsync(productEntity);
+                await _productRepository.SaveChangesAsync();
+
+                var createdProductToReturn = _mapper.Map<ProductDto>(productEntity);
+
+                return CreatedAtRoute("GetProduct",
+                    new { productId = createdProductToReturn.Id },
+                    createdProductToReturn);
             }
-
-            var productEntity = _mapper.Map<Entities.Product>(product);
-            _productRepository.AddProductAsync(productEntity);
-            await _productRepository.SaveChangesAsync();
-
-            var createdProductToReturn = _mapper.Map<ProductDto>(productEntity);
-
-            return CreatedAtRoute("GetProduct",
-                new { productId = createdProductToReturn.Id },
-                createdProductToReturn);
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while creating the product: {ex.Message}");
+            }
         }
 
         /// <summary>
-        /// Update an existing product
+        /// Update an existing product (Admin only)
         /// </summary>
         /// <param name="productId">The ID of the product to update</param>
         /// <param name="product">Product update data</param>
         /// <returns>No content if successful</returns>
         [HttpPut("{productId}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult> UpdateProduct(int productId, ProductForUpdateDto product)
         {
-            var productEntity = await _productRepository.GetProductAsync(productId);
-
-            if (productEntity == null)
+            try
             {
-                return NotFound();
-            }
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
 
-            // Validate category exists
-            if (!await _productRepository.ProductCategoryExistsAsync(product.CategoryId))
+                var productEntity = await _productRepository.GetProductAsync(productId);
+
+                if (productEntity == null)
+                {
+                    return NotFound("Product not found.");
+                }
+
+                // Validate category exists
+                if (!await _productRepository.ProductCategoryExistsAsync(product.CategoryId))
+                {
+                    return BadRequest("Category does not exist.");
+                }
+
+                _mapper.Map(product, productEntity);
+                _productRepository.UpdateProduct(productEntity);
+                await _productRepository.SaveChangesAsync();
+
+                return NoContent();
+            }
+            catch (Exception ex)
             {
-                return BadRequest("Category does not exist.");
+                return StatusCode(500, $"An error occurred while updating the product: {ex.Message}");
             }
-
-            _mapper.Map(product, productEntity);
-            _productRepository.UpdateProduct(productEntity);
-            await _productRepository.SaveChangesAsync();
-
-            return NoContent();
         }
 
         /// <summary>
-        /// Delete a product
+        /// Delete a product (Admin only)
         /// </summary>
         /// <param name="productId">The ID of the product to delete</param>
         /// <returns>No content if successful</returns>
         [HttpDelete("{productId}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult> DeleteProduct(int productId)
         {
-            var productEntity = await _productRepository.GetProductAsync(productId);
-
-            if (productEntity == null)
+            try
             {
-                return NotFound();
+                var productEntity = await _productRepository.GetProductAsync(productId);
+
+                if (productEntity == null)
+                {
+                    return NotFound("Product not found.");
+                }
+
+                _productRepository.DeleteProduct(productEntity);
+                await _productRepository.SaveChangesAsync();
+
+                return NoContent();
             }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while deleting the product: {ex.Message}");
+            }
+        }
 
-            _productRepository.DeleteProduct(productEntity);
-            await _productRepository.SaveChangesAsync();
+        /// <summary>
+        /// Update product stock quantity (Admin only)
+        /// </summary>
+        /// <param name="productId">The ID of the product</param>
+        /// <param name="stockUpdate">Stock update data</param>
+        /// <returns>No content if successful</returns>
+        [HttpPatch("{productId}/stock")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult> UpdateProductStock(int productId, [FromBody] ProductStockUpdateDto stockUpdate)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
 
-            return NoContent();
+                var productEntity = await _productRepository.GetProductAsync(productId);
+
+                if (productEntity == null)
+                {
+                    return NotFound("Product not found.");
+                }
+
+                productEntity.StockQuantity = stockUpdate.StockQuantity;
+                _productRepository.UpdateProduct(productEntity);
+                await _productRepository.SaveChangesAsync();
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while updating product stock: {ex.Message}");
+            }
         }
     }
 }

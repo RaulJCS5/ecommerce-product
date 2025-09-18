@@ -146,6 +146,21 @@ namespace EcommerceProduct.API.Services
             return await _context.ProductCategories.AnyAsync(c => c.Id == categoryId);
         }
 
+        public void AddProductCategoryAsync(ProductCategory category)
+        {
+            _context.ProductCategories.Add(category);
+        }
+
+        public void UpdateProductCategory(ProductCategory category)
+        {
+            // Entity Framework will track the changes automatically
+        }
+
+        public void DeleteProductCategory(ProductCategory category)
+        {
+            _context.ProductCategories.Remove(category);
+        }
+
         // Product Review operations
         public async Task<IEnumerable<ProductReview>> GetProductReviewsAsync(int productId)
         {
@@ -286,7 +301,57 @@ namespace EcommerceProduct.API.Services
 
         public void UpdateOrder(Order order)
         {
-            // EF Core automatically tracks changes
+            // Entity Framework will track changes automatically
+        }
+
+        public void DeleteOrder(Order order)
+        {
+            _context.Orders.Remove(order);
+        }
+
+        // Analytics methods implementation
+        public async Task<int> GetTotalCustomersCountAsync()
+        {
+            return await _context.Customers.CountAsync();
+        }
+
+        public async Task<int> GetTotalProductsCountAsync()
+        {
+            return await _context.Products.CountAsync();
+        }
+
+        public async Task<int> GetTotalOrdersCountAsync()
+        {
+            return await _context.Orders.CountAsync();
+        }
+
+        public async Task<decimal> GetTotalRevenueAsync()
+        {
+            return await _context.Orders
+                .Where(o => o.Status == OrderStatus.Delivered)
+                .SumAsync(o => o.TotalAmount);
+        }
+
+        public async Task<int> GetPendingOrdersCountAsync()
+        {
+            return await _context.Orders
+                .CountAsync(o => o.Status == OrderStatus.Pending);
+        }
+
+        public async Task<IEnumerable<ProductReview>> GetPendingReviewsAsync()
+        {
+            return await _context.ProductReviews
+                .Where(r => !r.IsApproved)
+                .Include(r => r.Product)
+                .OrderByDescending(r => r.CreatedDate)
+                .ToListAsync();
+        }
+
+        public async Task<ProductReview?> GetReviewByIdAsync(int reviewId)
+        {
+            return await _context.ProductReviews
+                .Include(r => r.Product)
+                .FirstOrDefaultAsync(r => r.Id == reviewId);
         }
 
         public async Task<bool> SaveChangesAsync()

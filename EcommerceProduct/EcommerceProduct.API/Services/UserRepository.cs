@@ -16,6 +16,9 @@ namespace EcommerceProduct.API.Services
         Task<bool> UserHasCustomerProfileAsync(int userId);
         Task UpdateLastLoginAsync(int userId);
         Task<bool> DeleteUserAsync(int userId);
+        Task<IEnumerable<User>> GetAllUsersAsync();
+        Task<int> GetTotalUsersCountAsync();
+        void UpdateUser(User user);
         Task<bool> SaveChangesAsync();
     }
 
@@ -121,6 +124,31 @@ namespace EcommerceProduct.API.Services
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<IEnumerable<User>> GetAllUsersAsync()
+        {
+            return await _context.Users
+                .Include(u => u.Customer)
+                .OrderBy(u => u.LastName)
+                .ThenBy(u => u.FirstName)
+                .ToListAsync();
+        }
+
+        public async Task<int> GetTotalUsersCountAsync()
+        {
+            return await _context.Users.CountAsync();
+        }
+
+        public void UpdateUser(User user)
+        {
+            // Entity Framework will track changes automatically for entities already in context
+            // If the entity is not being tracked, attach and mark as modified
+            if (_context.Entry(user).State == EntityState.Detached)
+            {
+                _context.Users.Attach(user);
+                _context.Entry(user).State = EntityState.Modified;
+            }
         }
 
         public async Task<bool> SaveChangesAsync()

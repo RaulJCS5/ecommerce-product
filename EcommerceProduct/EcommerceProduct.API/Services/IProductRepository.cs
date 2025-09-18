@@ -20,6 +20,9 @@ namespace EcommerceProduct.API.Services
         Task<IEnumerable<ProductCategory>> GetProductCategoriesAsync();
         Task<ProductCategory?> GetProductCategoryAsync(int categoryId, bool includeProducts = false);
         Task<bool> ProductCategoryExistsAsync(int categoryId);
+        void AddProductCategoryAsync(ProductCategory category);
+        void UpdateProductCategory(ProductCategory category);
+        void DeleteProductCategory(ProductCategory category);
 
         // Product Review operations
         Task<IEnumerable<ProductReview>> GetProductReviewsAsync(int productId);
@@ -36,13 +39,23 @@ namespace EcommerceProduct.API.Services
         void AddCustomerAsync(Customer customer);
         void UpdateCustomer(Customer customer);
 
-        // Order operations
+        // Order-related methods
         Task<IEnumerable<Order>> GetOrdersAsync();
         Task<IEnumerable<Order>> GetOrdersForCustomerAsync(int customerId);
         Task<Order?> GetOrderAsync(int orderId, bool includeOrderItems = false);
         Task<bool> OrderExistsAsync(int orderId);
         void AddOrderAsync(Order order);
         void UpdateOrder(Order order);
+        void DeleteOrder(Order order);
+
+        // Analytics methods
+        Task<int> GetTotalCustomersCountAsync();
+        Task<int> GetTotalProductsCountAsync();
+        Task<int> GetTotalOrdersCountAsync();
+        Task<decimal> GetTotalRevenueAsync();
+        Task<int> GetPendingOrdersCountAsync();
+        Task<IEnumerable<ProductReview>> GetPendingReviewsAsync();
+        Task<ProductReview?> GetReviewByIdAsync(int reviewId);
 
         // Save changes
         Task<bool> SaveChangesAsync();
