@@ -186,9 +186,10 @@ namespace EcommerceProduct.API.Services
         {
             return await _context.Customers
                 .Include(c => c.Orders)
-                .Where(c => c.IsActive)
-                .OrderBy(c => c.LastName)
-                .ThenBy(c => c.FirstName)
+                .Include(c => c.User)
+                .Where(c => c.User.IsActive)
+                .OrderBy(c => c.User.LastName)
+                .ThenBy(c => c.User.FirstName)
                 .ToListAsync();
         }
 
@@ -197,6 +198,7 @@ namespace EcommerceProduct.API.Services
             if (includeOrders)
             {
                 return await _context.Customers
+                    .Include(c => c.User)
                     .Include(c => c.Orders)
                         .ThenInclude(o => o.OrderItems)
                             .ThenInclude(oi => oi.Product)
@@ -205,14 +207,16 @@ namespace EcommerceProduct.API.Services
             }
 
             return await _context.Customers
+                .Include(c => c.User)
                 .Where(c => c.Id == customerId)
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<Customer?> GetCustomerByEmailAsync(string email)
+        public async Task<Customer?> GetCustomerByUserEmailAsync(string email)
         {
             return await _context.Customers
-                .Where(c => c.Email == email)
+                .Include(c => c.User)
+                .Where(c => c.User.Email == email)
                 .FirstOrDefaultAsync();
         }
 

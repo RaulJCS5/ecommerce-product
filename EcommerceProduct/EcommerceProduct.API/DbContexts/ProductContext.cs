@@ -31,11 +31,12 @@ namespace EcommerceProduct.API.DbContexts
                 .HasIndex(u => u.Email)
                 .IsUnique();
 
+            // Configure User-Customer relationship (one-to-one)
             modelBuilder.Entity<User>()
                 .HasOne(u => u.Customer)
-                .WithMany()
-                .HasForeignKey(u => u.CustomerId)
-                .OnDelete(DeleteBehavior.SetNull);
+                .WithOne(c => c.User)
+                .HasForeignKey<Customer>(c => c.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Configure ProductCategory
             modelBuilder.Entity<ProductCategory>()
@@ -51,10 +52,7 @@ namespace EcommerceProduct.API.DbContexts
                 .Property(p => p.Price)
                 .HasPrecision(18, 2);
 
-            // Configure Customer
-            modelBuilder.Entity<Customer>()
-                .HasIndex(c => c.Email)
-                .IsUnique();
+            // Configure Customer - no unique email index since email is in User entity
 
             // Configure Order
             modelBuilder.Entity<Order>()

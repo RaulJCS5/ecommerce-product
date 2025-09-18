@@ -13,6 +13,7 @@ namespace EcommerceProduct.API.Services
         Task<User?> GetUserByEmailAsync(string email);
         Task<bool> UserExistsAsync(string username, string email);
         Task UpdateLastLoginAsync(int userId);
+        Task<bool> DeleteUserAsync(int userId);
         string HashPassword(string password);
         bool VerifyPassword(string password, string hashedPassword);
     }
@@ -72,6 +73,10 @@ namespace EcommerceProduct.API.Services
         public async Task UpdateLastLoginAsync(int userId)
         {
             await _userRepository.UpdateLastLoginAsync(userId);
+        }
+        public async Task<bool> DeleteUserAsync(int userId)
+        {
+            return await _userRepository.DeleteUserAsync(userId);
         }
 
         public string HashPassword(string password)

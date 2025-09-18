@@ -26,9 +26,6 @@ namespace EcommerceProduct.API.Entities
         [MaxLength(50)]
         public string LastName { get; set; } = string.Empty;
 
-        [MaxLength(50)]
-        public string City { get; set; } = string.Empty;
-
         [MaxLength(20)]
         public string Role { get; set; } = "User"; // User, Admin, etc.
 
@@ -38,8 +35,7 @@ namespace EcommerceProduct.API.Entities
 
         public DateTime? LastLoginAt { get; set; }
 
-        // Optional: Link to Customer if this user represents a customer
-        public int? CustomerId { get; set; }
+        // Navigation property - one user can have one customer profile
         public Customer? Customer { get; set; }
     }
 }

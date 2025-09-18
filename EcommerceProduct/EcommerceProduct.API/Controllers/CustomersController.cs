@@ -7,7 +7,7 @@ using EcommerceProduct.API.Services;
 namespace EcommerceProduct.API.Controllers
 {
     [ApiController]
-    [Authorize(Policy = "MustBeFromAltares")]
+    [Authorize(Policy = "MustBeUser")]
     [Route("api/customers")]
     public class CustomersController : ControllerBase
     {

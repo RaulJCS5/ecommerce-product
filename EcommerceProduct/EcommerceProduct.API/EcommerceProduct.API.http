@@ -16,9 +16,8 @@ Content-Type: application/json
   "email": "testuser@example.com",
   "password": "SecurePassword123!",
   "firstName": "Test",
-  "lastName": "User",
-  "city": "Altares"
-}
+  "lastName": "User"
+  }
 
 ### 2. Login with user credentials
 POST {{EcommerceProduct.API_HostAddress}}/api/authentication/login
@@ -37,6 +36,11 @@ Content-Type: application/json
   "username": "testuser",
   "password": "SecurePassword123!"
 }
+
+### 4. Delete user by ID
+DELETE {{EcommerceProduct.API_HostAddress}}/api/authentication/2
+Accept: application/json
+Authorization: Bearer {{jwtToken}}
 
 ### 4. Get user by ID
 GET {{EcommerceProduct.API_HostAddress}}/api/authentication/1

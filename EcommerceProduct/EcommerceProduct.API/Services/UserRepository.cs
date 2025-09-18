@@ -9,9 +9,13 @@ namespace EcommerceProduct.API.Services
         Task<User?> GetUserByUsernameAsync(string username);
         Task<User?> GetUserByEmailAsync(string email);
         Task<User?> GetUserByIdAsync(int id);
+        Task<User?> GetUserWithCustomerAsync(int id);
         Task<User> CreateUserAsync(User user);
+        Task<Customer> CreateCustomerProfileAsync(int userId, Customer customer);
         Task<bool> UserExistsAsync(string username, string email);
+        Task<bool> UserHasCustomerProfileAsync(int userId);
         Task UpdateLastLoginAsync(int userId);
+        Task<bool> DeleteUserAsync(int userId);
         Task<bool> SaveChangesAsync();
     }
 
@@ -42,6 +46,39 @@ namespace EcommerceProduct.API.Services
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
 
+        public async Task<User?> GetUserWithCustomerAsync(int id)
+        {
+            return await _context.Users
+                .Include(u => u.Customer)
+                .FirstOrDefaultAsync(u => u.Id == id);
+        }
+
+        public async Task<Customer> CreateCustomerProfileAsync(int userId, Customer customer)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                throw new ArgumentException("User not found", nameof(userId));
+            }
+
+            customer.UserId = userId;
+            _context.Customers.Add(customer);
+            await _context.SaveChangesAsync();
+
+            // Load the customer with user information
+            var createdCustomer = await _context.Customers
+                .Include(c => c.User)
+                .FirstOrDefaultAsync(c => c.Id == customer.Id);
+
+            return createdCustomer ?? customer;
+        }
+
+        public async Task<bool> UserHasCustomerProfileAsync(int userId)
+        {
+            return await _context.Customers
+                .AnyAsync(c => c.UserId == userId);
+        }
+
         public async Task<User> CreateUserAsync(User user)
         {
             _context.Users.Add(user);
@@ -63,6 +100,27 @@ namespace EcommerceProduct.API.Services
                 user.LastLoginAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
             }
+        }
+        public async Task<bool> DeleteUserAsync(int userId)
+        {
+            var user = await _context.Users
+                .Include(u => u.Customer) // Include customer profile if exists
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+            {
+                return false; // User not found
+            }
+
+            // If the user has a customer profile, remove it first
+            if (user.Customer != null)
+            {
+                _context.Customers.Remove(user.Customer);
+            }
+
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+            return true;
         }
 
         public async Task<bool> SaveChangesAsync()

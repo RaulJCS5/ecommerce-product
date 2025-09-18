@@ -2,6 +2,7 @@
 using EcommerceProduct.API.Entities;
 using EcommerceProduct.API.Models;
 using EcommerceProduct.API.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -15,12 +16,14 @@ namespace EcommerceProduct.API.Controllers
     {
         private readonly IConfiguration _configuration;
         private readonly IUserService _userService;
+        private readonly IUserRepository _userRepository;
         private readonly IMapper _mapper;
 
-        public AuthenticationController(IConfiguration configuration, IUserService userService, IMapper mapper)
+        public AuthenticationController(IConfiguration configuration, IUserService userService, IUserRepository userRepository, IMapper mapper)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
@@ -111,6 +114,24 @@ namespace EcommerceProduct.API.Controllers
         }
 
         /// <summary>
+        /// Delete user by ID
+        /// </summary>
+        /// <param name="id">User ID</param>
+        /// <returns>No content</returns>
+        [HttpDelete("{id}")]
+        [Authorize]
+        public async Task<ActionResult> DeleteUser(int id)
+        {
+            var result = await _userService.DeleteUserAsync(id);
+            if (!result)
+            {
+                return NotFound("User not found.");
+            }
+
+            return NoContent();
+        }
+
+        /// <summary>
         /// Legacy authenticate endpoint (for backward compatibility)
         /// </summary>
         /// <param name="authenticationRequestBody">Legacy authentication request</param>
@@ -152,6 +173,95 @@ namespace EcommerceProduct.API.Controllers
             return Ok(userDto);
         }
 
+        /// <summary>
+        /// Get user with customer profile by ID
+        /// </summary>
+        /// <param name="id">User ID</param>
+        /// <returns>User information with customer profile</returns>
+        [HttpGet("{id}/with-customer")]
+        [Authorize]
+        public async Task<ActionResult<UserWithCustomerDto>> GetUserWithCustomer(int id)
+        {
+            var user = await _userRepository.GetUserWithCustomerAsync(id);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            var userWithCustomerDto = _mapper.Map<UserWithCustomerDto>(user);
+            return Ok(userWithCustomerDto);
+        }
+
+        /// <summary>
+        /// Create a customer profile for a user
+        /// </summary>
+        /// <param name="id">User ID</param>
+        /// <param name="createCustomerDto">Customer profile information</param>
+        /// <returns>Created customer profile</returns>
+        [HttpPost("{id}/customer-profile")]
+        [Authorize]
+        public async Task<ActionResult<CustomerDto>> CreateCustomerProfile(int id, [FromBody] CreateCustomerProfileDto createCustomerDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                // Check if user exists
+                var user = await _userRepository.GetUserByIdAsync(id);
+                if (user == null)
+                {
+                    return NotFound("User not found.");
+                }
+
+                // Check if user already has a customer profile
+                if (await _userRepository.UserHasCustomerProfileAsync(id))
+                {
+                    return Conflict("User already has a customer profile.");
+                }
+
+                // Map DTO to Customer entity
+                var customer = _mapper.Map<Customer>(createCustomerDto);
+
+                // Create customer profile
+                var createdCustomer = await _userRepository.CreateCustomerProfileAsync(id, customer);
+
+                // Map back to DTO for response
+                var customerDto = _mapper.Map<CustomerDto>(createdCustomer);
+
+                return CreatedAtAction(nameof(GetUserWithCustomer), new { id = id }, customerDto);
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while creating customer profile: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Check if a user has a customer profile
+        /// </summary>
+        /// <param name="id">User ID</param>
+        /// <returns>Boolean indicating if user has customer profile</returns>
+        [HttpGet("{id}/has-customer-profile")]
+        [Authorize]
+        public async Task<ActionResult<bool>> HasCustomerProfile(int id)
+        {
+            var user = await _userRepository.GetUserByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            var hasProfile = await _userRepository.UserHasCustomerProfileAsync(id);
+            return Ok(hasProfile);
+        }
+
         private string GenerateJwtToken(User user)
         {
             var securityKey = new SymmetricSecurityKey(
@@ -167,7 +277,6 @@ namespace EcommerceProduct.API.Controllers
                 new Claim("given_name", user.FirstName),
                 new Claim("family_name", user.LastName),
                 new Claim("email", user.Email),
-                new Claim("city", user.City),
                 new Claim("role", user.Role)
             };
 

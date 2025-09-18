@@ -9,13 +9,13 @@ namespace EcommerceProduct.API.Profiles
         public UserProfile()
         {
             CreateMap<User, UserDto>();
+            CreateMap<User, UserWithCustomerDto>();
             CreateMap<UserRegistrationDto, User>()
                 .ForMember(dest => dest.PasswordHash, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.IsActive, opt => opt.Ignore())
                 .ForMember(dest => dest.LastLoginAt, opt => opt.Ignore())
-                .ForMember(dest => dest.CustomerId, opt => opt.Ignore())
                 .ForMember(dest => dest.Customer, opt => opt.Ignore());
         }
     }

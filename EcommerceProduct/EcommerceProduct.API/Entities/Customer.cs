@@ -9,18 +9,6 @@ namespace EcommerceProduct.API.Entities
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
-        [Required]
-        [MaxLength(100)]
-        public string FirstName { get; set; } = string.Empty;
-
-        [Required]
-        [MaxLength(100)]
-        public string LastName { get; set; } = string.Empty;
-
-        [Required]
-        [MaxLength(200)]
-        public string Email { get; set; } = string.Empty;
-
         [MaxLength(20)]
         public string? PhoneNumber { get; set; }
 
@@ -36,18 +24,22 @@ namespace EcommerceProduct.API.Entities
         [MaxLength(100)]
         public string? Country { get; set; }
 
-        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        // Foreign key to User entity
+        public int UserId { get; set; }
 
-        public bool IsActive { get; set; } = true;
+        // Navigation property to User
+        public User User { get; set; } = null!;
 
         // Navigation property for orders
         public ICollection<Order> Orders { get; set; } = new List<Order>();
 
-        public Customer(string firstName, string lastName, string email)
+        public Customer()
         {
-            FirstName = firstName;
-            LastName = lastName;
-            Email = email;
+        }
+
+        public Customer(int userId)
+        {
+            UserId = userId;
         }
     }
 }

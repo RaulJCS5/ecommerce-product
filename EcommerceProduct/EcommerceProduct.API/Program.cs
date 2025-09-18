@@ -60,10 +60,10 @@ builder.Services.AddAuthentication("Bearer")
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("MustBeFromAltares", policy =>
+    options.AddPolicy("MustBeUser", policy =>
     {
         policy.RequireAuthenticatedUser();
-        policy.RequireClaim("city", "Altares");
+        policy.RequireClaim("role", "User");
     });
 });
 

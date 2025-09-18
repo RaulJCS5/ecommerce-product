@@ -10,7 +10,8 @@ namespace EcommerceProduct.API.Profiles
         {
             CreateMap<Order, OrderDto>()
                 .ForMember(dest => dest.CustomerName, opt => opt.MapFrom(src =>
-                    src.Customer != null ? $"{src.Customer.FirstName} {src.Customer.LastName}" : string.Empty));
+                    src.Customer != null && src.Customer.User != null ?
+                    $"{src.Customer.User.FirstName} {src.Customer.User.LastName}" : string.Empty));
 
             CreateMap<OrderItem, OrderItemDto>()
                 .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product!.Name))

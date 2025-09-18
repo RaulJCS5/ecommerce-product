@@ -31,7 +31,7 @@ namespace EcommerceProduct.API.Services
         // Customer operations
         Task<IEnumerable<Customer>> GetCustomersAsync();
         Task<Customer?> GetCustomerAsync(int customerId, bool includeOrders = false);
-        Task<Customer?> GetCustomerByEmailAsync(string email);
+        Task<Customer?> GetCustomerByUserEmailAsync(string email);
         Task<bool> CustomerExistsAsync(int customerId);
         void AddCustomerAsync(Customer customer);
         void UpdateCustomer(Customer customer);
