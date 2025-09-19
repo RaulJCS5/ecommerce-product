@@ -31,14 +31,6 @@ namespace EcommerceProduct.API.Services
         void UpdateProductReview(ProductReview review);
         void DeleteProductReview(ProductReview review);
 
-        // Customer operations
-        Task<IEnumerable<Customer>> GetCustomersAsync();
-        Task<Customer?> GetCustomerAsync(int customerId, bool includeOrders = false);
-        Task<Customer?> GetCustomerByUserEmailAsync(string email);
-        Task<bool> CustomerExistsAsync(int customerId);
-        void AddCustomerAsync(Customer customer);
-        void UpdateCustomer(Customer customer);
-
         // Order-related methods
         Task<IEnumerable<Order>> GetOrdersAsync();
         Task<IEnumerable<Order>> GetOrdersForCustomerAsync(int customerId);

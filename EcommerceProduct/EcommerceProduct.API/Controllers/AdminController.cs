@@ -182,19 +182,19 @@ namespace EcommerceProduct.API.Controllers
         /// Get all customers for admin management
         /// </summary>
         /// <returns>List of customers</returns>
-        [HttpGet("customers")]
-        public async Task<ActionResult<IEnumerable<CustomerDto>>> GetAllCustomers()
-        {
-            try
-            {
-                var customers = await _productRepository.GetCustomersAsync();
-                return Ok(_mapper.Map<IEnumerable<CustomerDto>>(customers));
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"An error occurred while retrieving customers: {ex.Message}");
-            }
-        }
+        //[HttpGet("customers")]
+        //public async Task<ActionResult<IEnumerable<CustomerDto>>> GetAllCustomers()
+        //{
+        //    try
+        //    {
+        //        var customers = await _productRepository.GetCustomersAsync();
+        //        return Ok(_mapper.Map<IEnumerable<CustomerDto>>(customers));
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, $"An error occurred while retrieving customers: {ex.Message}");
+        //    }
+        //}
 
         /// <summary>
         /// Get all products for admin management
@@ -270,42 +270,42 @@ namespace EcommerceProduct.API.Controllers
         /// Get basic analytics - business intelligence
         /// </summary>
         /// <returns>Basic analytics data</returns>
-        [HttpGet("analytics/basic")]
-        public async Task<ActionResult<object>> GetBasicAnalytics()
-        {
-            try
-            {
-                var orders = await _productRepository.GetOrdersAsync();
-                var products = await _productRepository.GetProductsAsync();
-                var customers = await _productRepository.GetCustomersAsync();
+        //[HttpGet("analytics/basic")]
+        //public async Task<ActionResult<object>> GetBasicAnalytics()
+        //{
+        //    try
+        //    {
+        //        var orders = await _productRepository.GetOrdersAsync();
+        //        var products = await _productRepository.GetProductsAsync();
+        //        var customers = await _productRepository.GetCustomersAsync();
 
-                var analytics = new
-                {
-                    TotalRevenue = orders.Sum(o => o.TotalAmount),
-                    TotalOrders = orders.Count(),
-                    AverageOrderValue = orders.Any() ? orders.Average(o => o.TotalAmount) : 0,
-                    TotalProducts = products.Count(),
-                    TotalCustomers = customers.Count(),
-                    OrdersByStatus = orders.GroupBy(o => o.Status)
-                        .Select(g => new { Status = g.Key.ToString(), Count = g.Count() }),
-                    RecentOrders = orders.OrderByDescending(o => o.OrderDate)
-                        .Take(5)
-                        .Select(o => new
-                        {
-                            o.Id,
-                            o.OrderNumber,
-                            o.TotalAmount,
-                            o.Status,
-                            o.OrderDate
-                        })
-                };
+        //        var analytics = new
+        //        {
+        //            TotalRevenue = orders.Sum(o => o.TotalAmount),
+        //            TotalOrders = orders.Count(),
+        //            AverageOrderValue = orders.Any() ? orders.Average(o => o.TotalAmount) : 0,
+        //            TotalProducts = products.Count(),
+        //            TotalCustomers = customers.Count(),
+        //            OrdersByStatus = orders.GroupBy(o => o.Status)
+        //                .Select(g => new { Status = g.Key.ToString(), Count = g.Count() }),
+        //            RecentOrders = orders.OrderByDescending(o => o.OrderDate)
+        //                .Take(5)
+        //                .Select(o => new
+        //                {
+        //                    o.Id,
+        //                    o.OrderNumber,
+        //                    o.TotalAmount,
+        //                    o.Status,
+        //                    o.OrderDate
+        //                })
+        //        };
 
-                return Ok(analytics);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"An error occurred while retrieving analytics: {ex.Message}");
-            }
-        }
+        //        return Ok(analytics);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(500, $"An error occurred while retrieving analytics: {ex.Message}");
+        //    }
+        //}
     }
 }

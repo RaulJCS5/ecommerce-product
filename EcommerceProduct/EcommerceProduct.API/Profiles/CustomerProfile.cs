@@ -13,7 +13,10 @@ namespace EcommerceProduct.API.Profiles
                 .ForMember(dest => dest.FirstName, opt => opt.MapFrom(src => src.User.FirstName))
                 .ForMember(dest => dest.LastName, opt => opt.MapFrom(src => src.User.LastName))
                 .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.User.Email))
-                .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.User.Username));
+                .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.User.Username))
+                .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => src.User.CreatedAt))
+                .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.User.IsActive))
+                .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.User.Id));
 
             CreateMap<CreateCustomerProfileDto, Customer>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())

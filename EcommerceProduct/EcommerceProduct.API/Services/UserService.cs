@@ -16,11 +16,6 @@ namespace EcommerceProduct.API.Services
         Task<bool> DeleteUserAsync(int userId);
         string HashPassword(string password);
         bool VerifyPassword(string password, string hashedPassword);
-        // GetUserWithCustomerAsync
-        Task<User?> GetUserWithCustomerAsync(int id);
-        Task<bool> UserHasCustomerProfileAsync(int id);
-        Task<Customer> CreateCustomerProfileAsync(int userId, Customer customer);
-        //  GetAllUsersAsync
         Task<IEnumerable<User>> GetAllUsersAsync();
     }
 
@@ -123,21 +118,6 @@ namespace EcommerceProduct.API.Services
             using var rng = RandomNumberGenerator.Create();
             rng.GetBytes(saltBytes);
             return Convert.ToBase64String(saltBytes);
-        }
-
-        public async Task<User?> GetUserWithCustomerAsync(int id)
-        {
-            return await _userRepository.GetUserWithCustomerAsync(id);
-        }
-
-        public async Task<bool> UserHasCustomerProfileAsync(int id)
-        {
-            return await _userRepository.UserHasCustomerProfileAsync(id);
-        }
-
-        public async Task<Customer> CreateCustomerProfileAsync(int userId, Customer customer)
-        {
-            return await _userRepository.CreateCustomerProfileAsync(userId, customer);
         }
 
         public async Task<IEnumerable<User>> GetAllUsersAsync()

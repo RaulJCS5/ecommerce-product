@@ -196,60 +196,6 @@ namespace EcommerceProduct.API.Services
             _context.ProductReviews.Remove(review);
         }
 
-        // Customer operations
-        public async Task<IEnumerable<Customer>> GetCustomersAsync()
-        {
-            return await _context.Customers
-                .Include(c => c.Orders)
-                .Include(c => c.User)
-                .Where(c => c.User.IsActive)
-                .OrderBy(c => c.User.LastName)
-                .ThenBy(c => c.User.FirstName)
-                .ToListAsync();
-        }
-
-        public async Task<Customer?> GetCustomerAsync(int customerId, bool includeOrders = false)
-        {
-            if (includeOrders)
-            {
-                return await _context.Customers
-                    .Include(c => c.User)
-                    .Include(c => c.Orders)
-                        .ThenInclude(o => o.OrderItems)
-                            .ThenInclude(oi => oi.Product)
-                    .Where(c => c.Id == customerId)
-                    .FirstOrDefaultAsync();
-            }
-
-            return await _context.Customers
-                .Include(c => c.User)
-                .Where(c => c.Id == customerId)
-                .FirstOrDefaultAsync();
-        }
-
-        public async Task<Customer?> GetCustomerByUserEmailAsync(string email)
-        {
-            return await _context.Customers
-                .Include(c => c.User)
-                .Where(c => c.User.Email == email)
-                .FirstOrDefaultAsync();
-        }
-
-        public async Task<bool> CustomerExistsAsync(int customerId)
-        {
-            return await _context.Customers.AnyAsync(c => c.Id == customerId);
-        }
-
-        public void AddCustomerAsync(Customer customer)
-        {
-            _context.Customers.AddAsync(customer);
-        }
-
-        public void UpdateCustomer(Customer customer)
-        {
-            // EF Core automatically tracks changes
-        }
-
         // Order operations
         public async Task<IEnumerable<Order>> GetOrdersAsync()
         {

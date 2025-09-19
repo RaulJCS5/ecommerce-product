@@ -1,0 +1,219 @@
+@EcommerceProduct.API_HostAddress = https://localhost:7032
+
+# JWT Tokens (same as authentication file)
+# testuser
+@jwtToken = YOUR_JWT_TOKEN
+
+# admin
+@jwtTokenAdmin = YOUR_JWT_TOKEN_ADMIN
+
+### ========================
+### CUSTOMER MANAGEMENT
+### ========================
+
+### 1. Get all customers (Admin only)
+GET {{EcommerceProduct.API_HostAddress}}/api/customers
+Accept: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+### 2. Get specific customer by ID
+GET {{EcommerceProduct.API_HostAddress}}/api/customers/1
+Accept: application/json
+Authorization: Bearer {{jwtToken}}
+
+### 3. Get specific customer by ID with orders
+GET {{EcommerceProduct.API_HostAddress}}/api/customers/1?includeOrders=true
+Accept: application/json
+Authorization: Bearer {{jwtToken}}
+
+### 4. Get customer orders (User can only access their own)
+GET {{EcommerceProduct.API_HostAddress}}/api/customers/1/orders
+Accept: application/json
+Authorization: Bearer {{jwtToken}}
+
+### 5. Get customer orders (Admin can access any)
+GET {{EcommerceProduct.API_HostAddress}}/api/customers/1/orders
+Accept: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+### ========================
+### CUSTOMER PROFILE MANAGEMENT
+### ========================
+
+### 6. Create customer profile for current user
+POST {{EcommerceProduct.API_HostAddress}}/api/customers/profile
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "phoneNumber": "+123123123123",
+  "address": "Ao Lugar n 75",
+  "city": "Angra do Heroismo",
+  "postalCode": "9700-301",
+  "country": "Portugal"
+}
+
+### 7. Get my customer profile
+GET {{EcommerceProduct.API_HostAddress}}/api/customers/my-profile
+Accept: application/json
+Authorization: Bearer {{jwtToken}}
+
+### 7. Get my customer profile
+GET {{EcommerceProduct.API_HostAddress}}/api/customers/my-profile
+Accept: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+### 8. Update customer profile (User updating their own)
+PUT {{EcommerceProduct.API_HostAddress}}/api/customers
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "phoneNumber": "+123123123123",
+  "address": "Ao Lugar n 75",
+  "city": "Angra do Heroismo",
+  "postalCode": "9700-301",
+  "country": "Portugal"
+}
+
+### 9.1. Partial update - only phone number (other fields should remain unchanged)
+PUT {{EcommerceProduct.API_HostAddress}}/api/customers
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "phoneNumber": "+1-800-PARTIAL"
+}
+
+### 9.2. Partial update - only address and city (other fields should remain unchanged)
+PUT {{EcommerceProduct.API_HostAddress}}/api/customers
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "address": "123 Partial Update Street",
+  "city": "Partial City"
+}
+
+### 9. Update customer profile (Admin updating any)
+PUT {{EcommerceProduct.API_HostAddress}}/api/customers
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "phoneNumber": "+1555123456",
+  "address": "789 Admin Street",
+  "city": "Chicago",
+  "postalCode": "60601",
+  "country": "USA"
+}
+
+### ========================
+### ADMIN OPERATIONS
+### ========================
+
+### 10. Delete customer (Admin only)
+DELETE {{EcommerceProduct.API_HostAddress}}/api/customers/4
+Accept: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+### ========================
+### ERROR SCENARIOS (Testing Authorization)
+### ========================
+
+### 11. Try to get all customers as regular user (should fail)
+GET {{EcommerceProduct.API_HostAddress}}/api/customers
+Accept: application/json
+Authorization: Bearer {{jwtToken}}
+
+### 12. Try to access another user's orders (should fail)
+GET {{EcommerceProduct.API_HostAddress}}/api/customers/999/orders
+Accept: application/json
+Authorization: Bearer {{jwtToken}}
+
+### 13. Try to update another user's profile (should fail)
+PUT {{EcommerceProduct.API_HostAddress}}/api/customers/999
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "phoneNumber": "+1111111111",
+  "address": "Unauthorized Street",
+  "city": "Forbidden",
+  "postalCode": "00000",
+  "country": "Denied"
+}
+
+### 14. Try to delete customer as regular user (should fail)
+DELETE {{EcommerceProduct.API_HostAddress}}/api/customers/1
+Accept: application/json
+Authorization: Bearer {{jwtToken}}
+
+### 15. Try to access endpoints without authentication (should fail)
+GET {{EcommerceProduct.API_HostAddress}}/api/customers
+Accept: application/json
+
+### ========================
+### EDGE CASES
+### ========================
+
+### 16. Try to create duplicate customer profile (should fail)
+POST {{EcommerceProduct.API_HostAddress}}/api/customers/profile
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "phoneNumber": "+1234567890",
+  "address": "Duplicate Address",
+  "city": "Duplicate City",
+  "postalCode": "12345",
+  "country": "USA"
+}
+
+### 17. Get non-existent customer
+GET {{EcommerceProduct.API_HostAddress}}/api/customers/999
+Accept: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+### 18. Update non-existent customer
+PUT {{EcommerceProduct.API_HostAddress}}/api/customers/999
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "phoneNumber": "+1000000000",
+  "address": "Non-existent Street",
+  "city": "Ghost Town",
+  "postalCode": "00000",
+  "country": "Nowhere"
+}
+
+### ========================
+### VALIDATION TESTS
+### ========================
+
+### 19. Create customer profile with invalid data
+POST {{EcommerceProduct.API_HostAddress}}/api/customers/profile
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "phoneNumber": "",
+  "address": "",
+  "city": "",
+  "postalCode": "",
+  "country": ""
+}
+
+### 20. Update customer profile with invalid data
+PUT {{EcommerceProduct.API_HostAddress}}/api/customers/1
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "phoneNumber": null,
+  "address": null,
+  "city": null,
+  "postalCode": null,
+  "country": null
+}

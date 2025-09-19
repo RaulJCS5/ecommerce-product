@@ -13,14 +13,12 @@ namespace EcommerceProduct.API.Controllers
     [Route("api/customers")]
     public class CustomersController : ControllerBase
     {
-        private readonly IProductRepository _productRepository;
-        private readonly IUserRepository _userRepository;
+        private readonly ICustomerService _customerService;
         private readonly IMapper _mapper;
 
-        public CustomersController(IProductRepository productRepository, IUserRepository userRepository, IMapper mapper)
+        public CustomersController(ICustomerService customerService, IMapper mapper)
         {
-            _productRepository = productRepository ?? throw new ArgumentNullException(nameof(productRepository));
-            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
@@ -29,10 +27,10 @@ namespace EcommerceProduct.API.Controllers
         /// </summary>
         /// <returns>List of customers</returns>
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "MustBeAdmin")]
         public async Task<ActionResult<IEnumerable<CustomerDto>>> GetCustomers()
         {
-            var customerEntities = await _productRepository.GetCustomersAsync();
+            var customerEntities = await _customerService.GetCustomersAsync();
             return Ok(_mapper.Map<IEnumerable<CustomerDto>>(customerEntities));
         }
 
@@ -45,7 +43,7 @@ namespace EcommerceProduct.API.Controllers
         [HttpGet("{customerId}", Name = "GetCustomer")]
         public async Task<ActionResult<CustomerDto>> GetCustomer(int customerId, bool includeOrders = false)
         {
-            var customerEntity = await _productRepository.GetCustomerAsync(customerId, includeOrders);
+            var customerEntity = await _customerService.GetCustomerAsync(customerId, includeOrders);
 
             if (customerEntity == null)
             {
@@ -60,28 +58,23 @@ namespace EcommerceProduct.API.Controllers
         /// </summary>
         /// <param name="customerId">The ID of the customer</param>
         /// <returns>List of customer orders</returns>
-        [HttpGet("{customerId}/orders")]
-        public async Task<ActionResult<IEnumerable<OrderDto>>> GetCustomerOrders(int customerId)
-        {
-            // Check if current user can access this customer's orders
-            var currentUserId = int.Parse(User.FindFirst("sub")?.Value ?? "0");
-            var customer = await _productRepository.GetCustomerAsync(customerId);
-
-            if (customer == null)
-            {
-                return NotFound("Customer not found.");
-            }
-
-            // Allow access if user is admin or accessing their own orders
-            var userRole = User.FindFirst("role")?.Value;
-            if (userRole != "Admin" && customer.UserId != currentUserId)
-            {
-                return Forbid("You can only access your own orders.");
-            }
-
-            var ordersForCustomer = await _productRepository.GetOrdersForCustomerAsync(customerId);
-            return Ok(_mapper.Map<IEnumerable<OrderDto>>(ordersForCustomer));
-        }
+        //[HttpGet("{customerId}/orders")]
+        //public async Task<ActionResult<IEnumerable<OrderDto>>> GetCustomerOrders(int customerId)
+        //{
+        //    try
+        //    {
+        //        var ordersForCustomer = await _customerService.GetCustomerOrdersAsync(customerId);
+        //        return Ok(_mapper.Map<IEnumerable<OrderDto>>(ordersForCustomer));
+        //    }
+        //    catch (ArgumentException)
+        //    {
+        //        return NotFound("Customer not found.");
+        //    }
+        //    catch (UnauthorizedAccessException ex)
+        //    {
+        //        return Forbid(ex.Message);
+        //    }
+        //}
 
         /// <summary>
         /// Create a customer profile for the current user
@@ -98,14 +91,14 @@ namespace EcommerceProduct.API.Controllers
                     return BadRequest(ModelState);
                 }
 
-                var currentUserId = int.Parse(User.FindFirst("sub")?.Value ?? "0");
+                var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
                 if (currentUserId == 0)
                 {
                     return Unauthorized("User ID not found in token.");
                 }
 
                 // Check if user already has a customer profile
-                if (await _userRepository.UserHasCustomerProfileAsync(currentUserId))
+                if (await _customerService.UserHasCustomerProfileAsync(currentUserId))
                 {
                     return Conflict("User already has a customer profile.");
                 }
@@ -114,7 +107,7 @@ namespace EcommerceProduct.API.Controllers
                 var customer = _mapper.Map<Customer>(customerProfile);
 
                 // Create customer profile
-                var createdCustomer = await _userRepository.CreateCustomerProfileAsync(currentUserId, customer);
+                var createdCustomer = await _customerService.CreateCustomerProfileAsync(currentUserId, customer);
 
                 // Map back to DTO for response
                 var customerDto = _mapper.Map<CustomerDto>(createdCustomer);
@@ -132,13 +125,12 @@ namespace EcommerceProduct.API.Controllers
         }
 
         /// <summary>
-        /// Update customer profile
+        /// Update current user customer profile
         /// </summary>
-        /// <param name="customerId">The ID of the customer to update</param>
         /// <param name="customerProfile">Updated customer profile data</param>
         /// <returns>No content if successful</returns>
-        [HttpPut("{customerId}")]
-        public async Task<ActionResult> UpdateCustomerProfile(int customerId, [FromBody] CreateCustomerProfileDto customerProfile)
+        [HttpPut]
+        public async Task<ActionResult> UpdateCustomerProfile([FromBody] CreateCustomerProfileDto customerProfile)
         {
             try
             {
@@ -147,25 +139,18 @@ namespace EcommerceProduct.API.Controllers
                     return BadRequest(ModelState);
                 }
 
-                var customerEntity = await _productRepository.GetCustomerAsync(customerId);
-                if (customerEntity == null)
+                var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
+
+                // Map DTO to Customer entity for updating
+                var customerUpdate = _mapper.Map<Customer>(customerProfile);
+
+                // Update customer profile using the service
+                var result = await _customerService.UpdateCustomerByUserProfileAsync(currentUserId, customerUpdate);
+
+                if (!result)
                 {
                     return NotFound("Customer not found.");
                 }
-
-                // Check if current user can update this customer
-                var currentUserId = int.Parse(User.FindFirst("sub")?.Value ?? "0");
-                var userRole = User.FindFirst("role")?.Value;
-
-                if (userRole != "Admin" && customerEntity.UserId != currentUserId)
-                {
-                    return Forbid("You can only update your own profile.");
-                }
-
-                // Update customer data
-                _mapper.Map(customerProfile, customerEntity);
-                _productRepository.UpdateCustomer(customerEntity);
-                await _productRepository.SaveChangesAsync();
 
                 return NoContent();
             }
@@ -184,19 +169,19 @@ namespace EcommerceProduct.API.Controllers
         {
             try
             {
-                var currentUserId = int.Parse(User.FindFirst("sub")?.Value ?? "0");
+                var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "0");
                 if (currentUserId == 0)
                 {
                     return Unauthorized("User ID not found in token.");
                 }
 
-                var user = await _userRepository.GetUserWithCustomerAsync(currentUserId);
-                if (user?.Customer == null)
+                var customer = await _customerService.GetCustomerByUserIdAsync(currentUserId);
+                if (customer == null)
                 {
                     return NotFound("Customer profile not found. Please create a customer profile first.");
                 }
 
-                return Ok(_mapper.Map<CustomerDto>(user.Customer));
+                return Ok(_mapper.Map<CustomerDto>(customer));
             }
             catch (Exception ex)
             {
@@ -210,18 +195,14 @@ namespace EcommerceProduct.API.Controllers
         /// <param name="customerId">The ID of the customer to delete</param>
         /// <returns>No content if successful</returns>
         [HttpDelete("{customerId}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "MustBeAdmin")]
         public async Task<ActionResult> DeleteCustomer(int customerId)
         {
-            var customerEntity = await _productRepository.GetCustomerAsync(customerId);
-            if (customerEntity == null)
+            var result = await _customerService.DeleteCustomerAsync(customerId);
+            if (!result)
             {
                 return NotFound("Customer not found.");
             }
-
-            // Note: This will also delete related orders due to cascade delete
-            _productRepository.UpdateCustomer(customerEntity);
-            await _productRepository.SaveChangesAsync();
 
             return NoContent();
         }

@@ -16,12 +16,14 @@ namespace EcommerceProduct.API.Controllers
     {
         private readonly IConfiguration _configuration;
         private readonly IUserService _userService;
+        private readonly ICustomerService _customerService;
         private readonly IMapper _mapper;
 
-        public AuthenticationController(IConfiguration configuration, IUserService userService, IMapper mapper)
+        public AuthenticationController(IConfiguration configuration, IUserService userService, ICustomerService customerService, IMapper mapper)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
+            _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
@@ -194,15 +196,34 @@ namespace EcommerceProduct.API.Controllers
         [Authorize]
         public async Task<ActionResult<UserWithCustomerDto>> GetUserWithCustomer(int id)
         {
-            //var user = await _userRepository.GetUserWithCustomerAsync(id);
-            var user = await _userService.GetUserWithCustomerAsync(id); // Assuming User entity includes Customer navigation property
+            // Get user first
+            var user = await _userService.GetUserByIdAsync(id);
             if (user == null)
             {
                 return NotFound("User not found.");
             }
 
-            var userWithCustomerDto = _mapper.Map<UserWithCustomerDto>(user);
-            return Ok(userWithCustomerDto);
+            // Get customer profile
+            var customer = await _customerService.GetCustomerByUserIdAsync(id);
+
+            // Create a combined DTO
+            var userWithCustomerDto = _mapper.Map<UserDto>(user);
+            var customerDto = customer != null ? _mapper.Map<CustomerDto>(customer) : null;
+
+            var result = new UserWithCustomerDto
+            {
+                // Map user properties
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Role = user.Role,
+                IsActive = user.IsActive,
+                Customer = customerDto
+            };
+
+            return Ok(result);
         }
 
         /// <summary>
@@ -230,7 +251,7 @@ namespace EcommerceProduct.API.Controllers
                 }
 
                 // Check if user already has a customer profile
-                if (await _userService.UserHasCustomerProfileAsync(id))
+                if (await _customerService.UserHasCustomerProfileAsync(id))
                 {
                     return Conflict("User already has a customer profile.");
                 }
@@ -239,7 +260,7 @@ namespace EcommerceProduct.API.Controllers
                 var customer = _mapper.Map<Customer>(createCustomerDto);
 
                 // Create customer profile
-                var createdCustomer = await _userService.CreateCustomerProfileAsync(id, customer);
+                var createdCustomer = await _customerService.CreateCustomerProfileAsync(id, customer);
 
                 // Map back to DTO for response
                 var customerDto = _mapper.Map<CustomerDto>(createdCustomer);
@@ -270,7 +291,7 @@ namespace EcommerceProduct.API.Controllers
                 return NotFound("User not found.");
             }
 
-            var hasProfile = await _userService.UserHasCustomerProfileAsync(id);
+            var hasProfile = await _customerService.UserHasCustomerProfileAsync(id);
             return Ok(hasProfile);
         }
 
