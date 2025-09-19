@@ -9,7 +9,7 @@ namespace EcommerceProduct.API.Controllers
 {
     [ApiController]
     [Route("api/admin")]
-    [Authorize(Roles = "Admin")]
+    [Authorize(Policy = "MustBeAdmin")]
     public class AdminController : ControllerBase
     {
         private readonly IProductRepository _productRepository;

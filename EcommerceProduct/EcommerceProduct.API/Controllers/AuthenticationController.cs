@@ -16,14 +16,12 @@ namespace EcommerceProduct.API.Controllers
     {
         private readonly IConfiguration _configuration;
         private readonly IUserService _userService;
-        private readonly IUserRepository _userRepository;
         private readonly IMapper _mapper;
 
-        public AuthenticationController(IConfiguration configuration, IUserService userService, IUserRepository userRepository, IMapper mapper)
+        public AuthenticationController(IConfiguration configuration, IUserService userService, IMapper mapper)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
-            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
@@ -119,7 +117,7 @@ namespace EcommerceProduct.API.Controllers
         /// <param name="id">User ID</param>
         /// <returns>No content</returns>
         [HttpDelete("{id}")]
-        [Authorize]
+        [Authorize(Policy = "MustBeAdmin")]
         public async Task<ActionResult> DeleteUser(int id)
         {
             var result = await _userService.DeleteUserAsync(id);
@@ -178,11 +176,12 @@ namespace EcommerceProduct.API.Controllers
         /// </summary>
         /// <param name="id">User ID</param>
         /// <returns>User information with customer profile</returns>
-        [HttpGet("{id}/with-customer")]
+        [HttpGet("{id}/customer")]
         [Authorize]
         public async Task<ActionResult<UserWithCustomerDto>> GetUserWithCustomer(int id)
         {
-            var user = await _userRepository.GetUserWithCustomerAsync(id);
+            //var user = await _userRepository.GetUserWithCustomerAsync(id);
+            var user = await _userService.GetUserWithCustomerAsync(id); // Assuming User entity includes Customer navigation property
             if (user == null)
             {
                 return NotFound("User not found.");
@@ -198,7 +197,7 @@ namespace EcommerceProduct.API.Controllers
         /// <param name="id">User ID</param>
         /// <param name="createCustomerDto">Customer profile information</param>
         /// <returns>Created customer profile</returns>
-        [HttpPost("{id}/customer-profile")]
+        [HttpPost("{id}/customer/profile")]
         [Authorize]
         public async Task<ActionResult<CustomerDto>> CreateCustomerProfile(int id, [FromBody] CreateCustomerProfileDto createCustomerDto)
         {
@@ -210,14 +209,14 @@ namespace EcommerceProduct.API.Controllers
                 }
 
                 // Check if user exists
-                var user = await _userRepository.GetUserByIdAsync(id);
+                var user = await _userService.GetUserByIdAsync(id);
                 if (user == null)
                 {
                     return NotFound("User not found.");
                 }
 
                 // Check if user already has a customer profile
-                if (await _userRepository.UserHasCustomerProfileAsync(id))
+                if (await _userService.UserHasCustomerProfileAsync(id))
                 {
                     return Conflict("User already has a customer profile.");
                 }
@@ -226,7 +225,7 @@ namespace EcommerceProduct.API.Controllers
                 var customer = _mapper.Map<Customer>(createCustomerDto);
 
                 // Create customer profile
-                var createdCustomer = await _userRepository.CreateCustomerProfileAsync(id, customer);
+                var createdCustomer = await _userService.CreateCustomerProfileAsync(id, customer);
 
                 // Map back to DTO for response
                 var customerDto = _mapper.Map<CustomerDto>(createdCustomer);
@@ -248,37 +247,29 @@ namespace EcommerceProduct.API.Controllers
         /// </summary>
         /// <param name="id">User ID</param>
         /// <returns>Boolean indicating if user has customer profile</returns>
-        [HttpGet("{id}/has-customer-profile")]
-        [Authorize]
+        [HttpGet("{id}/customer/profile/check")]
         public async Task<ActionResult<bool>> HasCustomerProfile(int id)
         {
-            var user = await _userRepository.GetUserByIdAsync(id);
+            var user = await _userService.GetUserByIdAsync(id);
             if (user == null)
             {
                 return NotFound("User not found.");
             }
 
-            var hasProfile = await _userRepository.UserHasCustomerProfileAsync(id);
+            var hasProfile = await _userService.UserHasCustomerProfileAsync(id);
             return Ok(hasProfile);
         }
 
         private string GenerateJwtToken(User user)
         {
-            var securityKey = new SymmetricSecurityKey(
-                Convert.FromBase64String(_configuration["Authentication:SecretForKey"] ??
-                    throw new InvalidOperationException("Authentication:SecretForKey is required")));
-
+            var securityKey = new SymmetricSecurityKey(Convert.FromBase64String(_configuration["Authentication:SecretForKey"] ??
+                                    throw new InvalidOperationException("Authentication:SecretForKey is required")));
             var signingCredentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-            var claimsForToken = new List<Claim>
-            {
-                new Claim("sub", user.Id.ToString()),
-                new Claim("unique_name", user.Username),
-                new Claim("given_name", user.FirstName),
-                new Claim("family_name", user.LastName),
-                new Claim("email", user.Email),
-                new Claim("role", user.Role)
-            };
+            var claimsForToken = new List<Claim>();
+            claimsForToken.Add(new Claim("sub", user.Id.ToString()));
+            claimsForToken.Add(new Claim("given_name", user.FirstName));
+            claimsForToken.Add(new Claim("family_name", user.LastName));
+            claimsForToken.Add(new Claim("role_name", user.Role));
 
             var jwtSecurityToken = new JwtSecurityToken(
                 _configuration["Authentication:Issuer"],
@@ -288,7 +279,9 @@ namespace EcommerceProduct.API.Controllers
                 DateTime.UtcNow.AddHours(1),
                 signingCredentials);
 
-            return new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+            var tokenToReturn = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
+
+            return tokenToReturn;
         }
 
         // Legacy class for backward compatibility

@@ -60,10 +60,10 @@ builder.Services.AddAuthentication("Bearer")
 
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("MustBeUser", policy =>
+    options.AddPolicy("MustBeAdmin", policy =>
     {
         policy.RequireAuthenticatedUser();
-        policy.RequireClaim("role", "User");
+        policy.RequireClaim("role_name", "Admin");
     });
 });
 
