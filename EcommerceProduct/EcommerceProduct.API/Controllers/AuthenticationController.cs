@@ -159,6 +159,7 @@ namespace EcommerceProduct.API.Controllers
         /// <param name="id">User ID</param>
         /// <returns>User information</returns>
         [HttpGet("{id}", Name = "GetUser")]
+        [Authorize(Policy = "MustBeAdmin")]
         public async Task<ActionResult<UserDto>> GetUser(int id)
         {
             var user = await _userService.GetUserByIdAsync(id);
@@ -169,6 +170,19 @@ namespace EcommerceProduct.API.Controllers
 
             var userDto = _mapper.Map<UserDto>(user);
             return Ok(userDto);
+        }
+
+        /// <summary>
+        /// Get all users
+        /// </summary>
+        /// <returns>All users information</returns>
+        [HttpGet(Name = "GetAllUsers")]
+        [Authorize(Policy = "MustBeAdmin")]
+        public async Task<ActionResult<IEnumerable<UserDto>>> GetAllUsers()
+        {
+            var users = await _userService.GetAllUsersAsync();
+            var userDtos = _mapper.Map<IEnumerable<UserDto>>(users);
+            return Ok(userDtos);
         }
 
         /// <summary>

@@ -71,3 +71,10 @@ Authorization: Bearer {{jwtTokenAdmin}}
 ### 4. Get user by ID
 GET {{EcommerceProduct.API_HostAddress}}/api/authentication/1
 Accept: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+### 4. Get all users
+
+GET {{EcommerceProduct.API_HostAddress}}/api/authentication
+Accept: application/json
+Authorization: Bearer {{jwtTokenAdmin}}

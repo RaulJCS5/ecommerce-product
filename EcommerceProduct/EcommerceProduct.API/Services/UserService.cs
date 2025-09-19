@@ -20,6 +20,8 @@ namespace EcommerceProduct.API.Services
         Task<User?> GetUserWithCustomerAsync(int id);
         Task<bool> UserHasCustomerProfileAsync(int id);
         Task<Customer> CreateCustomerProfileAsync(int userId, Customer customer);
+        //  GetAllUsersAsync
+        Task<IEnumerable<User>> GetAllUsersAsync();
     }
 
     public class UserService : IUserService
@@ -136,6 +138,11 @@ namespace EcommerceProduct.API.Services
         public async Task<Customer> CreateCustomerProfileAsync(int userId, Customer customer)
         {
             return await _userRepository.CreateCustomerProfileAsync(userId, customer);
+        }
+
+        public async Task<IEnumerable<User>> GetAllUsersAsync()
+        {
+            return await _userRepository.GetAllUsersAsync();
         }
     }
 }

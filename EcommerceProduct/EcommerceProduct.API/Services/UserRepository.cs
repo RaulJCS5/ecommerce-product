@@ -129,9 +129,9 @@ namespace EcommerceProduct.API.Services
         public async Task<IEnumerable<User>> GetAllUsersAsync()
         {
             return await _context.Users
-                .Include(u => u.Customer)
-                .OrderBy(u => u.LastName)
-                .ThenBy(u => u.FirstName)
+                //.Include(u => u.Customer)
+                //.OrderBy(u => u.LastName)
+                //.ThenBy(u => u.FirstName)
                 .ToListAsync();
         }
 
