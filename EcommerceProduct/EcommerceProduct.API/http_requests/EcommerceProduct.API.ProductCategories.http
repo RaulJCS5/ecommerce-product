@@ -1,0 +1,351 @@
+@EcommerceProduct.API_HostAddress = https://localhost:7032
+
+# JWT tokens - Replace with actual tokens generated from authentication
+
+# testuser
+@jwtToken = YOUR_JWT_TOKEN
+
+# admin
+@jwtTokenAdmin = YOUR_JWT_TOKEN_ADMIN
+
+### ========================
+### PRODUCT CATEGORIES ENDPOINTS
+### ========================
+
+### 1. Get All Product Categories (Anonymous - No Auth Required)
+GET {{EcommerceProduct.API_HostAddress}}/api/categories
+Accept: application/json
+
+### 2. Get Specific Product Category by ID (Anonymous)
+GET {{EcommerceProduct.API_HostAddress}}/api/categories/5
+Accept: application/json
+
+### 3. Get Product Category with Products Included (Anonymous)
+GET {{EcommerceProduct.API_HostAddress}}/api/categories/1?includeProducts=true
+Accept: application/json
+
+### 4. Get Non-Existent Product Category (Should return 404)
+GET {{EcommerceProduct.API_HostAddress}}/api/categories/9999
+Accept: application/json
+
+### 5. Get Product Category with Invalid ID (Should return 400)
+GET {{EcommerceProduct.API_HostAddress}}/api/categories/0
+Accept: application/json
+
+### 6. Get Product Category with Negative ID (Should return 400)
+GET {{EcommerceProduct.API_HostAddress}}/api/categories/-1
+Accept: application/json
+
+### ========================
+### ADMIN OPERATIONS (Require Admin Authorization)
+### ========================
+
+### 7. Create New Product Category (Admin Only)
+POST {{EcommerceProduct.API_HostAddress}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "Electronics",
+  "description": "Electronic devices and accessories"
+}
+
+### 8. Create Another Product Category (Admin Only)
+POST {{EcommerceProduct.API_HostAddress}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "Clothing",
+  "description": "Apparel and fashion items"
+}
+
+### 9. Create Product Category - Books (Admin Only)
+POST {{EcommerceProduct.API_HostAddress}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "Books",
+  "description": "Literature, educational, and reference books"
+}
+
+### 10. Create Product Category - Home & Garden (Admin Only)
+POST {{EcommerceProduct.API_HostAddress}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "Home & Garden",
+  "description": "Home improvement and gardening supplies"
+}
+
+### 11. Create Product Category - Sports & Outdoors (Admin Only)
+POST {{EcommerceProduct.API_HostAddress}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "Sports & Outdoors",
+  "description": "Sports equipment and outdoor gear"
+}
+
+### 12. Create Product Category with Invalid Data - Empty Name (Should return 400)
+POST {{EcommerceProduct.API_HostAddress}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "",
+  "description": "Invalid category with empty name"
+}
+
+### 13. Create Product Category with Invalid Data - Too Short Name (Should return 400)
+POST {{EcommerceProduct.API_HostAddress}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "A",
+  "description": "Name too short"
+}
+
+### 14. Create Product Category with Invalid Data - Too Long Name (Should return 400)
+POST {{EcommerceProduct.API_HostAddress}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "This is a very long category name that exceeds the maximum allowed length of 100 characters which should cause a validation error",
+  "description": "Name too long"
+}
+
+### 15. Create Product Category with Invalid Data - Too Long Description (Should return 400)
+POST {{EcommerceProduct.API_HostAddress}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "Valid Name",
+  "description": "This is an extremely long description that exceeds the maximum allowed length of 500 characters. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque."
+}
+
+### 16. Create Product Category without Admin Rights (Should return 403)
+POST {{EcommerceProduct.API_HostAddress}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "name": "Unauthorized Category",
+  "description": "This should fail without admin rights"
+}
+
+### 17. Create Product Category without Authorization (Should return 401)
+POST {{EcommerceProduct.API_HostAddress}}/api/categories
+Content-Type: application/json
+
+{
+  "name": "Unauthorized Category",
+  "description": "This should require authentication"
+}
+
+### 18. Update Existing Product Category (Admin Only)
+PUT {{EcommerceProduct.API_HostAddress}}/api/categories/1
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "Updated Electronics",
+  "description": "Updated description for electronic devices and accessories",
+  "isActive": true
+}
+
+### 19. Update Product Category with Invalid Data - Empty Name (Should return 400)
+PUT {{EcommerceProduct.API_HostAddress}}/api/categories/1
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "",
+  "description": "Invalid update with empty name",
+  "isActive": true
+}
+
+### 20. Update Product Category with Invalid ID (Should return 400)
+PUT {{EcommerceProduct.API_HostAddress}}/api/categories/0
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "Valid Name",
+  "description": "Invalid ID",
+  "isActive": true
+}
+
+### 21. Update Non-Existent Product Category (Should return 404)
+PUT {{EcommerceProduct.API_HostAddress}}/api/categories/9999
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "Non-Existent Category",
+  "description": "This category doesn't exist",
+  "isActive": true
+}
+
+### 22. Update Product Category without Admin Rights (Should return 403)
+PUT {{EcommerceProduct.API_HostAddress}}/api/categories/1
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "name": "Unauthorized Update",
+  "description": "This should fail without admin rights",
+  "isActive": true
+}
+
+### 23. Update Product Category without Authorization (Should return 401)
+PUT {{EcommerceProduct.API_HostAddress}}/api/categories/1
+Content-Type: application/json
+
+{
+  "name": "Unauthorized Update",
+  "description": "This should require authentication",
+  "isActive": true
+}
+
+### 24. Deactivate Product Category (Admin Only)
+PUT {{EcommerceProduct.API_HostAddress}}/api/categories/1
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "Electronics",
+  "description": "Electronic devices and accessories",
+  "isActive": false
+}
+
+### 25. Reactivate Product Category (Admin Only)
+PUT {{EcommerceProduct.API_HostAddress}}/api/categories/1
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "Electronics",
+  "description": "Electronic devices and accessories",
+  "isActive": true
+}
+
+### ========================
+### DELETE OPERATIONS (Admin Only)
+### ========================
+
+### 26. Try to Delete Category with Products (Should return 400)
+# Note: This assumes category 1 has products. Create some products first if needed.
+DELETE {{EcommerceProduct.API_HostAddress}}/api/categories/1
+Authorization: Bearer {{jwtTokenAdmin}}
+
+### 27. Delete Empty Product Category (Admin Only)
+# Note: Use a category ID that has no products
+DELETE {{EcommerceProduct.API_HostAddress}}/api/categories/5
+Authorization: Bearer {{jwtTokenAdmin}}
+
+### 28. Delete Product Category with Invalid ID (Should return 400)
+DELETE {{EcommerceProduct.API_HostAddress}}/api/categories/0
+Authorization: Bearer {{jwtTokenAdmin}}
+
+### 29. Delete Non-Existent Product Category (Should return 404)
+DELETE {{EcommerceProduct.API_HostAddress}}/api/categories/9999
+Authorization: Bearer {{jwtTokenAdmin}}
+
+### 30. Delete Product Category without Admin Rights (Should return 403)
+DELETE {{EcommerceProduct.API_HostAddress}}/api/categories/2
+Authorization: Bearer {{jwtToken}}
+
+### 31. Delete Product Category without Authorization (Should return 401)
+DELETE {{EcommerceProduct.API_HostAddress}}/api/categories/2
+
+### ========================
+### EDGE CASES AND ADDITIONAL TESTING
+### ========================
+
+### 32. Create Category with Only Name (No Description)
+POST {{EcommerceProduct.API_HostAddress}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "Minimal Category"
+}
+
+### 33. Create Category with Exact Minimum Name Length (2 characters)
+POST {{EcommerceProduct.API_HostAddress}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "TV",
+  "description": "Television and related accessories"
+}
+
+### 34. Create Category with Maximum Name Length (100 characters)
+POST {{EcommerceProduct.API_HostAddress}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "This is a category name that is exactly one hundred characters long to test the maximum limit",
+  "description": "Testing maximum name length"
+}
+
+### 35. Create Category with Maximum Description Length (500 characters)
+POST {{EcommerceProduct.API_HostAddress}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "Test Category",
+  "description": "This description is designed to test the maximum allowed length of 500 characters. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit."
+}
+
+### ========================
+### COMMON TEST SCENARIOS
+### ========================
+
+### 36. Get All Categories After Creating Several
+GET {{EcommerceProduct.API_HostAddress}}/api/categories
+Accept: application/json
+
+### 37. Verify Category Creation by Getting Specific Category
+GET {{EcommerceProduct.API_HostAddress}}/api/categories/2
+Accept: application/json
+
+### 38. Test Case Sensitivity in Category Names
+POST {{EcommerceProduct.API_HostAddress}}/api/categories
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "electronics",
+  "description": "Testing case sensitivity"
+}
+
+### ========================
+### NOTES FOR TESTING
+### ========================
+
+# 1. Replace YOUR_JWT_TOKEN and YOUR_JWT_TOKEN_ADMIN with actual tokens
+# 2. Run authentication requests first to get valid tokens
+# 3. Create some products in categories before testing delete operations
+# 4. Some tests expect specific category IDs to exist
+# 5. Admin tests require a user with admin role
+# 6. Regular user tests require a non-admin authenticated user
+# 7. Test order matters for some scenarios (create before update/delete)
+
+### Sample Test Data Setup:
+# Categories to create for testing:
+# 1. Electronics - Electronic devices and accessories
+# 2. Clothing - Apparel and fashion items  
+# 3. Books - Literature, educational, and reference books
+# 4. Home & Garden - Home improvement and gardening supplies
+# 5. Sports & Outdoors - Sports equipment and outdoor gear

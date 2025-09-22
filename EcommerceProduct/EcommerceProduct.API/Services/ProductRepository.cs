@@ -100,9 +100,9 @@ namespace EcommerceProduct.API.Services
             return await _context.Products.AnyAsync(p => p.Id == productId);
         }
 
-        public void AddProductAsync(Product product)
+        public async Task AddProductAsync(Product product)
         {
-            _context.Products.Add(product);
+            await _context.Products.AddAsync(product);
         }
 
         public void UpdateProduct(Product product)
@@ -146,9 +146,16 @@ namespace EcommerceProduct.API.Services
             return await _context.ProductCategories.AnyAsync(c => c.Id == categoryId);
         }
 
-        public void AddProductCategoryAsync(ProductCategory category)
+        public async Task<bool> AddProductCategoryAsync(ProductCategory category)
         {
-            _context.ProductCategories.Add(category);
+            var existingCategory = _context.ProductCategories
+                .FirstOrDefault(c => c.Name.ToLower() == category.Name.ToLower());
+            if (existingCategory == null)
+            {
+                await _context.ProductCategories.AddAsync(category);
+                return true;
+            }
+            return false;
         }
 
         public void UpdateProductCategory(ProductCategory category)

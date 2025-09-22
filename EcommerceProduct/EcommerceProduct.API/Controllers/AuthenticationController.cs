@@ -311,7 +311,8 @@ namespace EcommerceProduct.API.Controllers
                 _configuration["Authentication:Audience"],
                 claimsForToken,
                 DateTime.UtcNow,
-                DateTime.UtcNow.AddHours(1),
+                //DateTime.UtcNow.AddHours(1),
+                DateTime.UtcNow.AddYears(2),
                 signingCredentials);
 
             var tokenToReturn = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);

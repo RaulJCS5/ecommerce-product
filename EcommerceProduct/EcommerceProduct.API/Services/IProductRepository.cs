@@ -12,7 +12,7 @@ namespace EcommerceProduct.API.Services
             int pageNumber, int pageSize);
         Task<Product?> GetProductAsync(int productId, bool includeReviews = false);
         Task<bool> ProductExistsAsync(int productId);
-        void AddProductAsync(Product product);
+        Task AddProductAsync(Product product);
         void UpdateProduct(Product product);
         void DeleteProduct(Product product);
 
@@ -20,7 +20,7 @@ namespace EcommerceProduct.API.Services
         Task<IEnumerable<ProductCategory>> GetProductCategoriesAsync();
         Task<ProductCategory?> GetProductCategoryAsync(int categoryId, bool includeProducts = false);
         Task<bool> ProductCategoryExistsAsync(int categoryId);
-        void AddProductCategoryAsync(ProductCategory category);
+        Task<bool> AddProductCategoryAsync(ProductCategory category);
         void UpdateProductCategory(ProductCategory category);
         void DeleteProductCategory(ProductCategory category);
 

@@ -1,0 +1,285 @@
+@EcommerceProduct.API_HostAddress = https://localhost:7032
+
+# JWT tokens - Replace with actual tokens generated from authentication
+
+# testuser
+@jwtToken = YOUR_JWT_TOKEN
+
+# admin
+@jwtTokenAdmin = YOUR_JWT_TOKEN_ADMIN
+
+### ========================
+### PRODUCT ENDPOINTS
+### ========================
+
+### 1. Get All Products (Anonymous - No Auth Required)
+GET {{EcommerceProduct.API_HostAddress}}/api/products
+Accept: application/json
+
+### 2. Get All Products with Pagination
+GET {{EcommerceProduct.API_HostAddress}}/api/products?pageNumber=1&pageSize=5
+Accept: application/json
+
+### 3. Get Products with Filters
+GET {{EcommerceProduct.API_HostAddress}}/api/products?name=Laptop&minPrice=500&maxPrice=2000
+Accept: application/json
+
+### 4. Get Products by Category
+GET {{EcommerceProduct.API_HostAddress}}/api/products?categoryId=1
+Accept: application/json
+
+### 5. Search Products by Query
+GET {{EcommerceProduct.API_HostAddress}}/api/products?searchQuery=gaming
+Accept: application/json
+
+### 6. Get Specific Product by ID (Anonymous)
+GET {{EcommerceProduct.API_HostAddress}}/api/products/1
+Accept: application/json
+
+### 7. Get Specific Product with Reviews (Anonymous)
+GET {{EcommerceProduct.API_HostAddress}}/api/products/1?includeReviews=true
+Accept: application/json
+
+### 8. Get Non-Existent Product (Should return 404)
+GET {{EcommerceProduct.API_HostAddress}}/api/products/9999
+Accept: application/json
+
+### ========================
+### ADMIN OPERATIONS (Require Admin Authorization)
+### ========================
+
+### 9. Create New Product (Admin Only)
+POST {{EcommerceProduct.API_HostAddress}}/api/products
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "Gaming Laptop XYZ",
+  "description": "High-performance gaming laptop with RTX graphics",
+  "price": 1299.99,
+  "stockQuantity": 50,
+  "sku": "LAPTOP-XYZ-001",
+  "imageUrl": "https://example.com/images/laptop-xyz.jpg",
+  "categoryId": 1
+}
+
+### 10. Create Product with Invalid Data (Should return 400)
+POST {{EcommerceProduct.API_HostAddress}}/api/products
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "",
+  "description": "Invalid product with no name",
+  "price": -100,
+  "stockQuantity": -5,
+  "categoryId": 999
+}
+
+### 11. Create Product with Non-Existent Category (Should return 400)
+POST {{EcommerceProduct.API_HostAddress}}/api/products
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "Test Product",
+  "description": "Product with non-existent category",
+  "price": 99.99,
+  "stockQuantity": 10,
+  "categoryId": 999
+}
+
+### 12. Create Product without Admin Rights (Should return 403)
+POST {{EcommerceProduct.API_HostAddress}}/api/products
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "name": "Unauthorized Product",
+  "description": "This should fail",
+  "price": 99.99,
+  "stockQuantity": 10,
+  "categoryId": 1
+}
+
+### 13. Update Existing Product (Admin Only)
+PUT {{EcommerceProduct.API_HostAddress}}/api/products/2
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "Updated Gaming Laptop",
+  "description": "Updated description for gaming laptop",
+  "price": 1399.99,
+  "stockQuantity": 45,
+  "sku": "LAPTOP-XYZ-001-V2",
+  "imageUrl": "https://example.com/images/laptop-xyz-updated.jpg",
+  "isActive": true,
+  "categoryId": 1
+}
+
+### 14. Update Product with Invalid Data (Should return 400)
+PUT {{EcommerceProduct.API_HostAddress}}/api/products/1
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "",
+  "description": "Invalid update",
+  "price": -50,
+  "stockQuantity": -10,
+  "isActive": true,
+  "categoryId": 999
+}
+
+### 15. Update Non-Existent Product (Should return 404)
+PUT {{EcommerceProduct.API_HostAddress}}/api/products/9999
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "name": "Non-Existent Product",
+  "description": "This product doesn't exist",
+  "price": 99.99,
+  "stockQuantity": 10,
+  "isActive": true,
+  "categoryId": 1
+}
+
+### 16. Update Product without Admin Rights (Should return 403)
+PUT {{EcommerceProduct.API_HostAddress}}/api/products/1
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "name": "Unauthorized Update",
+  "description": "This should fail",
+  "price": 99.99,
+  "stockQuantity": 10,
+  "isActive": true,
+  "categoryId": 1
+}
+
+### 17. Update Product Stock (Admin Only)
+PATCH {{EcommerceProduct.API_HostAddress}}/api/products/1/stock
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "stockQuantity": 55
+}
+
+### 18. Update Stock with Invalid Data (Should return 400)
+PATCH {{EcommerceProduct.API_HostAddress}}/api/products/1/stock
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "stockQuantity": -5
+}
+
+### 19. Update Stock for Non-Existent Product (Should return 404)
+PATCH {{EcommerceProduct.API_HostAddress}}/api/products/9999/stock
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "stockQuantity": 50
+}
+
+### 20. Update Stock without Admin Rights (Should return 403)
+PATCH {{EcommerceProduct.API_HostAddress}}/api/products/1/stock
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "stockQuantity": 75
+}
+
+### 21. Delete Product (Admin Only)
+DELETE {{EcommerceProduct.API_HostAddress}}/api/products/1
+Authorization: Bearer {{jwtTokenAdmin}}
+
+### 22. Delete Non-Existent Product (Should return 404)
+DELETE {{EcommerceProduct.API_HostAddress}}/api/products/9999
+Authorization: Bearer {{jwtTokenAdmin}}
+
+### 23. Delete Product without Admin Rights (Should return 403)
+DELETE {{EcommerceProduct.API_HostAddress}}/api/products/1
+Authorization: Bearer {{jwtToken}}
+
+### 24. Delete Product without Authorization (Should return 401)
+DELETE {{EcommerceProduct.API_HostAddress}}/api/products/1
+
+### ========================
+### EDGE CASES AND ERROR TESTING
+### ========================
+
+### 25. Get Products with Invalid Pagination
+GET {{EcommerceProduct.API_HostAddress}}/api/products?pageNumber=-1&pageSize=0
+Accept: application/json
+
+### 26. Get Products with Invalid Price Range
+GET {{EcommerceProduct.API_HostAddress}}/api/products?minPrice=1000&maxPrice=500
+Accept: application/json
+
+### 27. Get Products with Large Page Size (Should be limited to max)
+GET {{EcommerceProduct.API_HostAddress}}/api/products?pageSize=1000
+Accept: application/json
+
+### 28. Create Product without Authorization (Should return 401)
+POST {{EcommerceProduct.API_HostAddress}}/api/products
+Content-Type: application/json
+
+{
+  "name": "Unauthorized Product",
+  "description": "This should require authentication",
+  "price": 99.99,
+  "stockQuantity": 10,
+  "categoryId": 1
+}
+
+### 29. Update Product without Authorization (Should return 401)
+PUT {{EcommerceProduct.API_HostAddress}}/api/products/1
+Content-Type: application/json
+
+{
+  "name": "Unauthorized Update",
+  "description": "This should require authentication",
+  "price": 99.99,
+  "stockQuantity": 10,
+  "isActive": true,
+  "categoryId": 1
+}
+
+### 30. Update Stock without Authorization (Should return 401)
+PATCH {{EcommerceProduct.API_HostAddress}}/api/products/1/stock
+Content-Type: application/json
+
+{
+  "stockQuantity": 50
+}
+
+### ========================
+### SAMPLE DATA FOR TESTING
+### ========================
+
+### Sample Product Categories (Create these first if needed)
+# Category 1: Electronics
+# Category 2: Clothing
+# Category 3: Books
+# Category 4: Home & Garden
+
+### Sample Products for Testing
+# Product 1: Gaming Laptop (Electronics)
+# Product 2: Wireless Mouse (Electronics)
+# Product 3: T-Shirt (Clothing)
+# Product 4: Novel (Books)
+# Product 5: Garden Tools (Home & Garden)
+
+### Notes:
+# 1. Replace YOUR_JWT_TOKEN and YOUR_JWT_TOKEN_ADMIN with actual tokens
+# 2. Ensure you have valid product categories in the database
+# 3. Some tests expect specific product IDs to exist
+# 4. Admin tests require a user with admin role
+# 5. Regular user tests require a non-admin authenticated user

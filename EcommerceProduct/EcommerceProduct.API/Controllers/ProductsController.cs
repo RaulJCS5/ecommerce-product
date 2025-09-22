@@ -1,9 +1,10 @@
-using System.Text.Json;
 using AutoMapper;
-using Microsoft.AspNetCore.Mvc;
+using EcommerceProduct.API.Entities;
 using EcommerceProduct.API.Models;
 using EcommerceProduct.API.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace EcommerceProduct.API.Controllers
 {
@@ -46,17 +47,36 @@ namespace EcommerceProduct.API.Controllers
             [FromQuery] int pageNumber = 1,
             [FromQuery] int pageSize = 10)
         {
-            if (pageSize > maxProductsPageSize)
+            try
             {
-                pageSize = maxProductsPageSize;
+                if (pageSize > maxProductsPageSize)
+                {
+                    pageSize = maxProductsPageSize;
+                }
+
+                // Validate page number
+                if (pageNumber < 1)
+                {
+                    pageNumber = 1;
+                }
+
+                // Validate price range
+                if (minPrice.HasValue && maxPrice.HasValue && minPrice > maxPrice)
+                {
+                    return BadRequest("Minimum price cannot be greater than maximum price.");
+                }
+
+                var (productEntities, paginationMetadata) = await _productRepository.GetProductsAsync(
+                    name, searchQuery, categoryId, minPrice, maxPrice, inStock, pageNumber, pageSize);
+
+                Response.Headers.Append("X-Pagination", JsonSerializer.Serialize(paginationMetadata));
+
+                return Ok(_mapper.Map<IEnumerable<ProductDto>>(productEntities));
             }
-
-            var (productEntities, paginationMetadata) = await _productRepository.GetProductsAsync(
-                name, searchQuery, categoryId, minPrice, maxPrice, inStock, pageNumber, pageSize);
-
-            Response.Headers.Append("X-Pagination", JsonSerializer.Serialize(paginationMetadata));
-
-            return Ok(_mapper.Map<IEnumerable<ProductDto>>(productEntities));
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while retrieving products: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -69,19 +89,26 @@ namespace EcommerceProduct.API.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetProduct(int productId, bool includeReviews = false)
         {
-            var product = await _productRepository.GetProductAsync(productId, includeReviews);
-
-            if (product == null)
+            try
             {
-                return NotFound("Product not found.");
-            }
+                var product = await _productRepository.GetProductAsync(productId, includeReviews);
 
-            if (includeReviews)
+                if (product == null)
+                {
+                    return NotFound("Product not found.");
+                }
+
+                if (includeReviews)
+                {
+                    return Ok(_mapper.Map<ProductWithReviewsDto>(product));
+                }
+
+                return Ok(_mapper.Map<ProductDto>(product));
+            }
+            catch (Exception ex)
             {
-                return Ok(_mapper.Map<ProductWithReviewsDto>(product));
+                return StatusCode(500, $"An error occurred while retrieving the product: {ex.Message}");
             }
-
-            return Ok(_mapper.Map<ProductDto>(product));
         }
 
         /// <summary>
@@ -90,7 +117,7 @@ namespace EcommerceProduct.API.Controllers
         /// <param name="product">Product creation data</param>
         /// <returns>Created product</returns>
         [HttpPost]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "MustBeAdmin")]
         public async Task<ActionResult<ProductDto>> CreateProduct(ProductForCreationDto product)
         {
             try
@@ -107,10 +134,12 @@ namespace EcommerceProduct.API.Controllers
                 }
 
                 var productEntity = _mapper.Map<Entities.Product>(product);
-                _productRepository.AddProductAsync(productEntity);
+                await _productRepository.AddProductAsync(productEntity);
                 await _productRepository.SaveChangesAsync();
 
-                var createdProductToReturn = _mapper.Map<ProductDto>(productEntity);
+                var createdProduct = await _productRepository.GetProductAsync(productEntity.Id);
+
+                var createdProductToReturn = _mapper.Map<ProductDto>(createdProduct);
 
                 return CreatedAtRoute("GetProduct",
                     new { productId = createdProductToReturn.Id },
@@ -129,7 +158,7 @@ namespace EcommerceProduct.API.Controllers
         /// <param name="product">Product update data</param>
         /// <returns>No content if successful</returns>
         [HttpPut("{productId}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "MustBeAdmin")]
         public async Task<ActionResult> UpdateProduct(int productId, ProductForUpdateDto product)
         {
             try
@@ -170,7 +199,7 @@ namespace EcommerceProduct.API.Controllers
         /// <param name="productId">The ID of the product to delete</param>
         /// <returns>No content if successful</returns>
         [HttpDelete("{productId}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "MustBeAdmin")]
         public async Task<ActionResult> DeleteProduct(int productId)
         {
             try
@@ -200,7 +229,7 @@ namespace EcommerceProduct.API.Controllers
         /// <param name="stockUpdate">Stock update data</param>
         /// <returns>No content if successful</returns>
         [HttpPatch("{productId}/stock")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Policy = "MustBeAdmin")]
         public async Task<ActionResult> UpdateProductStock(int productId, [FromBody] ProductStockUpdateDto stockUpdate)
         {
             try
