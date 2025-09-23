@@ -1,6 +1,9 @@
 ﻿using EcommerceProduct.API.Entities;
+using EcommerceProduct.API.Repository.Implementation;
+using EcommerceProduct.API.Repository.Interface;
+using EcommerceProduct.API.Services.Interface;
 
-namespace EcommerceProduct.API.Services
+namespace EcommerceProduct.API.Services.Implementation
 {
     public class CustomerService : ICustomerService
     {

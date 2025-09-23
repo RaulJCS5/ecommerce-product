@@ -2,9 +2,9 @@ using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using EcommerceProduct.API.Models;
-using EcommerceProduct.API.Services;
 using EcommerceProduct.API.Entities;
 using System.Security.Claims;
+using EcommerceProduct.API.Services.Interface;
 
 namespace EcommerceProduct.API.Controllers
 {

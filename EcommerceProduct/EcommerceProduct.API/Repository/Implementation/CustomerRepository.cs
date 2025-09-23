@@ -1,8 +1,9 @@
 ﻿using EcommerceProduct.API.DbContexts;
 using EcommerceProduct.API.Entities;
+using EcommerceProduct.API.Repository.Interface;
 using Microsoft.EntityFrameworkCore;
 
-namespace EcommerceProduct.API.Services
+namespace EcommerceProduct.API.Repository.Implementation
 {
     public class CustomerRepository : ICustomerRepository
     {

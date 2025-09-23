@@ -1,6 +1,7 @@
 using EcommerceProduct.API.Entities;
+using EcommerceProduct.API.Services;
 
-namespace EcommerceProduct.API.Services
+namespace EcommerceProduct.API.Repository.Interface
 {
     public interface IProductRepository
     {

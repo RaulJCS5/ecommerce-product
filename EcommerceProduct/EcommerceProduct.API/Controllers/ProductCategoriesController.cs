@@ -1,8 +1,8 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using EcommerceProduct.API.Models;
-using EcommerceProduct.API.Services;
 using Microsoft.AspNetCore.Authorization;
+using EcommerceProduct.API.Repository.Interface;
 
 namespace EcommerceProduct.API.Controllers
 {

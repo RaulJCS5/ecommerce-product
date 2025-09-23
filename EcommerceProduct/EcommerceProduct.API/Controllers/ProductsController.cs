@@ -1,7 +1,7 @@
 using AutoMapper;
 using EcommerceProduct.API.Entities;
 using EcommerceProduct.API.Models;
-using EcommerceProduct.API.Services;
+using EcommerceProduct.API.Services.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
@@ -13,13 +13,13 @@ namespace EcommerceProduct.API.Controllers
     [Route("api/products")]
     public class ProductsController : ControllerBase
     {
-        private readonly IProductRepository _productRepository;
+        private readonly IProductService _productService;
         private readonly IMapper _mapper;
         const int maxProductsPageSize = 20;
 
-        public ProductsController(IProductRepository productRepository, IMapper mapper)
+        public ProductsController(IProductService productService, IMapper mapper)
         {
-            _productRepository = productRepository ?? throw new ArgumentNullException(nameof(productRepository));
+            _productService = productService ?? throw new ArgumentNullException(nameof(productService));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
@@ -66,7 +66,7 @@ namespace EcommerceProduct.API.Controllers
                     return BadRequest("Minimum price cannot be greater than maximum price.");
                 }
 
-                var (productEntities, paginationMetadata) = await _productRepository.GetProductsAsync(
+                var (productEntities, paginationMetadata) = await _productService.GetProductsAsync(
                     name, searchQuery, categoryId, minPrice, maxPrice, inStock, pageNumber, pageSize);
 
                 Response.Headers.Append("X-Pagination", JsonSerializer.Serialize(paginationMetadata));
@@ -91,7 +91,7 @@ namespace EcommerceProduct.API.Controllers
         {
             try
             {
-                var product = await _productRepository.GetProductAsync(productId, includeReviews);
+                var product = await _productService.GetProductAsync(productId, includeReviews);
 
                 if (product == null)
                 {
@@ -128,16 +128,13 @@ namespace EcommerceProduct.API.Controllers
                 }
 
                 // Validate category exists
-                if (!await _productRepository.ProductCategoryExistsAsync(product.CategoryId))
+                if (!await _productService.ProductCategoryExistsAsync(product.CategoryId))
                 {
                     return BadRequest("Category does not exist.");
                 }
 
-                var productEntity = _mapper.Map<Entities.Product>(product);
-                await _productRepository.AddProductAsync(productEntity);
-                await _productRepository.SaveChangesAsync();
-
-                var createdProduct = await _productRepository.GetProductAsync(productEntity.Id);
+                var productEntity = _mapper.Map<Product>(product);
+                var createdProduct = await _productService.CreateProductAsync(productEntity);
 
                 var createdProductToReturn = _mapper.Map<ProductDto>(createdProduct);
 
@@ -168,22 +165,58 @@ namespace EcommerceProduct.API.Controllers
                     return BadRequest(ModelState);
                 }
 
-                var productEntity = await _productRepository.GetProductAsync(productId);
-
-                if (productEntity == null)
-                {
-                    return NotFound("Product not found.");
-                }
-
                 // Validate category exists
-                if (!await _productRepository.ProductCategoryExistsAsync(product.CategoryId))
+                if (!await _productService.ProductCategoryExistsAsync(product.CategoryId))
                 {
                     return BadRequest("Category does not exist.");
                 }
 
-                _mapper.Map(product, productEntity);
-                _productRepository.UpdateProduct(productEntity);
-                await _productRepository.SaveChangesAsync();
+                // Use the more efficient DTO-based update method
+                var updated = await _productService.UpdateProductAsync(productId, product);
+
+                if (!updated)
+                {
+                    return NotFound("Product not found.");
+                }
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while updating the product: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Partially update a product (Admin only) - only provided fields are updated
+        /// </summary>
+        /// <param name="productId">The ID of the product to update</param>
+        /// <param name="product">Product partial update data</param>
+        /// <returns>No content if successful</returns>
+        [HttpPatch("{productId}")]
+        [Authorize(Policy = "MustBeAdmin")]
+        public async Task<ActionResult> PartialUpdateProduct(int productId, ProductPartialUpdateDto product)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                // Validate category exists if it's being updated
+                if (product.CategoryId.HasValue && !await _productService.ProductCategoryExistsAsync(product.CategoryId.Value))
+                {
+                    return BadRequest("Category does not exist.");
+                }
+
+                // Use the ultra-efficient partial update method
+                var updated = await _productService.PartialUpdateProductAsync(productId, product);
+
+                if (!updated)
+                {
+                    return NotFound("Product not found.");
+                }
 
                 return NoContent();
             }
@@ -204,15 +237,12 @@ namespace EcommerceProduct.API.Controllers
         {
             try
             {
-                var productEntity = await _productRepository.GetProductAsync(productId);
+                var deleted = await _productService.DeleteProductAsync(productId);
 
-                if (productEntity == null)
+                if (!deleted)
                 {
                     return NotFound("Product not found.");
                 }
-
-                _productRepository.DeleteProduct(productEntity);
-                await _productRepository.SaveChangesAsync();
 
                 return NoContent();
             }
@@ -239,16 +269,12 @@ namespace EcommerceProduct.API.Controllers
                     return BadRequest(ModelState);
                 }
 
-                var productEntity = await _productRepository.GetProductAsync(productId);
+                var updated = await _productService.UpdateProductStockAsync(productId, stockUpdate.StockQuantity);
 
-                if (productEntity == null)
+                if (!updated)
                 {
                     return NotFound("Product not found.");
                 }
-
-                productEntity.StockQuantity = stockUpdate.StockQuantity;
-                _productRepository.UpdateProduct(productEntity);
-                await _productRepository.SaveChangesAsync();
 
                 return NoContent();
             }

@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using EcommerceProduct.API.DbContexts;
 using EcommerceProduct.API.Entities;
+using EcommerceProduct.API.Services;
+using EcommerceProduct.API.Repository.Interface;
 
-namespace EcommerceProduct.API.Services
+namespace EcommerceProduct.API.Repository.Implementation
 {
     public class ProductRepository : IProductRepository
     {
@@ -43,7 +45,7 @@ namespace EcommerceProduct.API.Services
             {
                 searchQuery = searchQuery.Trim();
                 collection = collection.Where(p => p.Name.Contains(searchQuery)
-                    || (p.Description != null && p.Description.Contains(searchQuery)));
+                    || p.Description != null && p.Description.Contains(searchQuery));
             }
 
             if (categoryId.HasValue)
