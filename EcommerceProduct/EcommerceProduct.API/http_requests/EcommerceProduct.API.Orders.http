@@ -1,0 +1,192 @@
+@EcommerceProduct.API_HostAddress = https://localhost:7032
+
+# JWT tokens - Replace with actual tokens generated from authentication
+
+# testuser (customer)
+@jwtToken = YOUR_JWT_TOKEN
+
+# admin
+@jwtTokenAdmin = YOUR_JWT_TOKEN_ADMIN
+
+### ========================
+### ORDER ENDPOINTS
+### ========================
+
+### 1. Get All Orders (Admin Only)
+GET {{EcommerceProduct.API_HostAddress}}/api/orders
+Authorization: Bearer {{jwtTokenAdmin}}
+Accept: application/json
+
+### 2. Get My Orders (Customer)
+GET {{EcommerceProduct.API_HostAddress}}/api/orders/my-orders
+Authorization: Bearer {{jwtToken}}
+Accept: application/json
+
+### 3. Get Specific Order by ID (Customer can view own orders)
+GET {{EcommerceProduct.API_HostAddress}}/api/orders/1
+Authorization: Bearer {{jwtToken}}
+Accept: application/json
+
+### 4. Get Specific Order with Order Items
+GET {{EcommerceProduct.API_HostAddress}}/api/orders/1?includeOrderItems=true
+Authorization: Bearer {{jwtToken}}
+Accept: application/json
+
+### 5. Create New Order (Customer)
+POST {{EcommerceProduct.API_HostAddress}}/api/orders
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "orderItems": [
+    {
+      "productId": 1,
+      "quantity": 2
+    },
+    {
+      "productId": 2,
+      "quantity": 1
+    }
+  ],
+  "shippingAddress": "123 Main St, City, State 12345",
+  "notes": "Please deliver after 5 PM"
+}
+
+### 6. Create Order with Single Item
+POST {{EcommerceProduct.API_HostAddress}}/api/orders
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "orderItems": [
+    {
+      "productId": 1,
+      "quantity": 1
+    }
+  ],
+  "shippingAddress": "456 Oak Ave, City, State 67890"
+}
+
+### ========================
+### ADMIN OPERATIONS
+### ========================
+
+### 7. Update Order Status (Admin Only)
+PUT {{EcommerceProduct.API_HostAddress}}/api/orders/1
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "status": 1,
+  "shippingAddress": "Updated shipping address",
+  "notes": "Updated order notes"
+}
+
+### 8. Update Order to Shipped Status (Admin Only)
+PUT {{EcommerceProduct.API_HostAddress}}/api/orders/1
+Content-Type: application/json
+Authorization: Bearer {{jwtTokenAdmin}}
+
+{
+  "status": 2,
+  "shippingAddress": "123 Main St, City, State 12345",
+  "notes": "Order shipped via FedEx"
+}
+
+### ========================
+### ORDER CANCELLATION
+### ========================
+
+### 9. Cancel Own Order (Customer)
+PATCH {{EcommerceProduct.API_HostAddress}}/api/orders/1/cancel
+Authorization: Bearer {{jwtToken}}
+
+### 10. Cancel Order as Admin
+PATCH {{EcommerceProduct.API_HostAddress}}/api/orders/2/cancel
+Authorization: Bearer {{jwtTokenAdmin}}
+
+### ========================
+### ERROR SCENARIOS
+### ========================
+
+### 11. Try to access orders without authentication (Should return 401)
+GET {{EcommerceProduct.API_HostAddress}}/api/orders/my-orders
+
+### 12. Try to get all orders as regular user (Should return 403)
+GET {{EcommerceProduct.API_HostAddress}}/api/orders
+Authorization: Bearer {{jwtToken}}
+
+### 13. Try to update order as regular user (Should return 403)
+PUT {{EcommerceProduct.API_HostAddress}}/api/orders/1
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "status": 1,
+  "notes": "Trying to update as regular user"
+}
+
+### 14. Create order with non-existent product (Should return 400)
+POST {{EcommerceProduct.API_HostAddress}}/api/orders
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "orderItems": [
+    {
+      "productId": 9999,
+      "quantity": 1
+    }
+  ],
+  "shippingAddress": "123 Test St, City, State 12345"
+}
+
+### 15. Create order with insufficient stock (Should return 400)
+POST {{EcommerceProduct.API_HostAddress}}/api/orders
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "orderItems": [
+    {
+      "productId": 1,
+      "quantity": 999999
+    }
+  ],
+  "shippingAddress": "123 Test St, City, State 12345"
+}
+
+### 16. Get non-existent order (Should return 404)
+GET {{EcommerceProduct.API_HostAddress}}/api/orders/9999
+Authorization: Bearer {{jwtToken}}
+
+### 17. Try to cancel already shipped order (Should return 400)
+PATCH {{EcommerceProduct.API_HostAddress}}/api/orders/1/cancel
+Authorization: Bearer {{jwtToken}}
+
+### ========================
+### NOTES FOR TESTING
+### ========================
+
+# Order Status Values:
+# 0 = Pending
+# 1 = Processing 
+# 2 = Shipped
+# 3 = Delivered
+# 4 = Cancelled
+
+# Prerequisites for testing:
+# 1. Replace YOUR_JWT_TOKEN and YOUR_JWT_TOKEN_ADMIN with actual tokens
+# 2. Ensure you have a customer profile created for the test user
+# 3. Ensure you have products with sufficient stock in the database
+# 4. Admin tests require a user with admin role
+# 5. Customer tests require a regular authenticated user
+
+# Test Flow Suggestion:
+# 1. First authenticate and get tokens
+# 2. Create a customer profile if needed
+# 3. Create an order (test #5 or #6)
+# 4. View your orders (test #2)
+# 5. Get specific order details (test #3 or #4)
+# 6. Update order as admin (test #7 or #8)
+# 7. Try to cancel order (test #9 or #10)

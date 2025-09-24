@@ -8,6 +8,7 @@ namespace EcommerceProduct.API.Services.Interface
         Task<User> RegisterUserAsync(User user, string password);
         Task<User?> GetUserByUsernameAsync(string username);
         Task<User?> GetUserByIdAsync(int id);
+        Task<User?> GetUserWithCustomerAsync(int id);
         Task<User?> GetUserByEmailAsync(string email);
         Task<bool> UserExistsAsync(string username, string email);
         Task UpdateLastLoginAsync(int userId);

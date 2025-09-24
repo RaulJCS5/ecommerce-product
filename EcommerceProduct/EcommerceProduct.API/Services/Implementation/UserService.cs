@@ -48,6 +48,11 @@ namespace EcommerceProduct.API.Services.Implementation
             return await _userRepository.GetUserByIdAsync(id);
         }
 
+        public async Task<User?> GetUserWithCustomerAsync(int id)
+        {
+            return await _userRepository.GetUserWithCustomerAsync(id);
+        }
+
         public async Task<User?> GetUserByEmailAsync(string email)
         {
             return await _userRepository.GetUserByEmailAsync(email);
