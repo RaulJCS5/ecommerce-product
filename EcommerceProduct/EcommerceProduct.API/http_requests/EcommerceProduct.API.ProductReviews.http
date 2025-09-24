@@ -1,0 +1,139 @@
+@EcommerceProduct.API_HostAddress = https://localhost:7032
+
+# JWT tokens - Replace with actual tokens generated from authentication
+
+# testuser (customer)
+@jwtToken = YOUR_JWT_TOKEN
+
+# admin
+@jwtTokenAdmin = YOUR_JWT_TOKEN_ADMIN
+
+### ========================
+### PRODUCT REVIEW ENDPOINTS
+### ========================
+
+### 1. Get All Reviews for Product (Public - no auth required)
+GET {{EcommerceProduct.API_HostAddress}}/api/products/1/reviews
+Accept: application/json
+
+### 2. Get Specific Review by ID
+GET {{EcommerceProduct.API_HostAddress}}/api/products/1/reviews/1
+Accept: application/json
+
+### 3. Create New Product Review (Customer - requires auth)
+POST {{EcommerceProduct.API_HostAddress}}/api/products/1/reviews
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "rating": 5,
+  "comment": "Great product! Really happy with my purchase.",
+  "customerName": "Test Customer"
+}
+
+### 4. Create Another Product Review with Different Rating
+POST {{EcommerceProduct.API_HostAddress}}/api/products/1/reviews
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "rating": 4,
+  "comment": "Good quality product, fast delivery.",
+  "customerName": "Another Customer"
+}
+
+### 5. Create Review with Minimum Rating
+POST {{EcommerceProduct.API_HostAddress}}/api/products/2/reviews
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "rating": 1,
+  "comment": "Not satisfied with this product.",
+  "customerName": "Disappointed Customer"
+}
+
+### ========================
+### ADMIN OPERATIONS
+### ========================
+
+### 6. Approve a Product Review (Admin Only)
+PATCH {{EcommerceProduct.API_HostAddress}}/api/products/1/reviews/1/approve
+Authorization: Bearer {{jwtTokenAdmin}}
+
+### 7. Delete a Product Review (Admin or Owner)
+DELETE {{EcommerceProduct.API_HostAddress}}/api/products/1/reviews/1
+Authorization: Bearer {{jwtTokenAdmin}}
+
+### ========================
+### ERROR SCENARIOS
+### ========================
+
+### 8. Try to create review without authentication (Should return 401)
+POST {{EcommerceProduct.API_HostAddress}}/api/products/1/reviews
+Content-Type: application/json
+
+{
+  "rating": 5,
+  "comment": "Test review without auth",
+  "customerName": "Test User"
+}
+
+### 9. Try to approve review as regular user (Should return 403)
+PATCH {{EcommerceProduct.API_HostAddress}}/api/products/1/reviews/1/approve
+Authorization: Bearer {{jwtToken}}
+
+### 10. Create review with invalid rating (Should return 400)
+POST {{EcommerceProduct.API_HostAddress}}/api/products/1/reviews
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "rating": 6,
+  "comment": "Invalid rating test",
+  "customerName": "Test Customer"
+}
+
+### 11. Create review with missing required fields (Should return 400)
+POST {{EcommerceProduct.API_HostAddress}}/api/products/1/reviews
+Content-Type: application/json
+Authorization: Bearer {{jwtToken}}
+
+{
+  "comment": "Missing rating and customer name"
+}
+
+### 12. Get reviews for non-existent product (Should return 404)
+GET {{EcommerceProduct.API_HostAddress}}/api/products/9999/reviews
+
+### 13. Get non-existent review (Should return 404)
+GET {{EcommerceProduct.API_HostAddress}}/api/products/1/reviews/9999
+
+### ========================
+### NOTES FOR TESTING
+### ========================
+
+# Prerequisites for testing:
+# 1. Replace YOUR_JWT_TOKEN and YOUR_JWT_TOKEN_ADMIN with actual tokens
+# 2. Ensure you have products in the database (productId 1, 2, etc.)
+# 3. Ensure you have a customer profile created for the test user
+# 4. Admin tests require a user with admin role
+# 5. Customer tests require a regular authenticated user
+
+# Rating Values:
+# - Must be between 1 and 5 (inclusive)
+# - 1 = Poor, 2 = Fair, 3 = Good, 4 = Very Good, 5 = Excellent
+
+# Test Flow Suggestion:
+# 1. First authenticate and get tokens (use Authentication.http)
+# 2. Create some product reviews (tests #3, #4, #5)
+# 3. View all reviews for a product (test #1)
+# 4. Get specific review details (test #2)
+# 5. Approve reviews as admin (test #6)
+# 6. Test error scenarios (tests #8-13)
+# 7. Delete reviews if needed (test #7)
+
+# Customer Name Field:
+# - This is separate from the authenticated user
+# - Used for display purposes in reviews
+# - Can be different from the actual user account name

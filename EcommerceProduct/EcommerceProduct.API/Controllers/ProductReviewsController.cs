@@ -2,8 +2,8 @@ using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using EcommerceProduct.API.Models;
 using Microsoft.AspNetCore.Authorization;
-using EcommerceProduct.API.Repository.Implementation;
-using EcommerceProduct.API.Repository.Interface;
+using EcommerceProduct.API.Services.Interface;
+using System.Security.Claims;
 
 namespace EcommerceProduct.API.Controllers
 {
@@ -11,15 +11,36 @@ namespace EcommerceProduct.API.Controllers
     [Route("api/products/{productId}/reviews")]
     public class ProductReviewsController : ControllerBase
     {
-        private readonly IProductRepository _productRepository;
-        private readonly IUserRepository _userRepository;
+        private readonly IProductReviewService _productReviewService;
+        private readonly IUserService _userService;
         private readonly IMapper _mapper;
 
-        public ProductReviewsController(IProductRepository productRepository, IUserRepository userRepository, IMapper mapper)
+        public ProductReviewsController(IProductReviewService productReviewService,
+            IUserService userService,
+            IMapper mapper)
         {
-            _productRepository = productRepository ?? throw new ArgumentNullException(nameof(productRepository));
-            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _productReviewService = productReviewService ??
+                throw new ArgumentNullException(nameof(productReviewService));
+            _userService = userService ??
+                throw new ArgumentNullException(nameof(userService));
+            _mapper = mapper ??
+                throw new ArgumentNullException(nameof(mapper));
+        }
+
+        /// <summary>
+        /// Helper method to safely get the current authenticated user ID
+        /// </summary>
+        /// <returns>User ID from the JWT token claims</returns>
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+            {
+                throw new UnauthorizedAccessException("Invalid or missing user ID in token.");
+            }
+
+            return userId;
         }
 
         /// <summary>
@@ -31,13 +52,19 @@ namespace EcommerceProduct.API.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<ProductReviewDto>>> GetProductReviews(int productId)
         {
-            if (!await _productRepository.ProductExistsAsync(productId))
+            try
             {
-                return NotFound("Product not found.");
+                var reviewsForProduct = await _productReviewService.GetProductReviewsAsync(productId);
+                return Ok(_mapper.Map<IEnumerable<ProductReviewDto>>(reviewsForProduct));
             }
-
-            var reviewsForProduct = await _productRepository.GetProductReviewsAsync(productId);
-            return Ok(_mapper.Map<IEnumerable<ProductReviewDto>>(reviewsForProduct));
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while retrieving reviews: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -50,19 +77,25 @@ namespace EcommerceProduct.API.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<ProductReviewDto>> GetProductReview(int productId, int reviewId)
         {
-            if (!await _productRepository.ProductExistsAsync(productId))
+            try
             {
-                return NotFound("Product not found.");
+                var reviewForProduct = await _productReviewService.GetProductReviewAsync(productId, reviewId);
+
+                if (reviewForProduct == null)
+                {
+                    return NotFound("Review not found.");
+                }
+
+                return Ok(_mapper.Map<ProductReviewDto>(reviewForProduct));
             }
-
-            var reviewForProduct = await _productRepository.GetProductReviewAsync(productId, reviewId);
-
-            if (reviewForProduct == null)
+            catch (InvalidOperationException ex)
             {
-                return NotFound("Review not found.");
+                return NotFound(ex.Message);
             }
-
-            return Ok(_mapper.Map<ProductReviewDto>(reviewForProduct));
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"An error occurred while retrieving the review: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -83,44 +116,23 @@ namespace EcommerceProduct.API.Controllers
                     return BadRequest(ModelState);
                 }
 
-                if (!await _productRepository.ProductExistsAsync(productId))
-                {
-                    return NotFound("Product not found.");
-                }
+                var currentUserId = GetCurrentUserId();
 
-                var currentUserId = int.Parse(User.FindFirst("sub")?.Value ?? "0");
-                if (currentUserId == 0)
-                {
-                    return Unauthorized("User ID not found in token.");
-                }
-
-                var user = await _userRepository.GetUserWithCustomerAsync(currentUserId);
-                if (user?.Customer == null)
-                {
-                    return BadRequest("Customer profile not found. Please create a customer profile first.");
-                }
-
-                // Check if user has already reviewed this product
-                var existingReviews = await _productRepository.GetProductReviewsAsync(productId);
-                var customerEmail = user.Email;
-                if (existingReviews.Any(r => r.CustomerEmail == customerEmail))
-                {
-                    return BadRequest("You have already reviewed this product.");
-                }
-
-                var reviewEntity = _mapper.Map<Entities.ProductReview>(review);
-                reviewEntity.CustomerName = $"{user.FirstName} {user.LastName}";
-                reviewEntity.CustomerEmail = user.Email;
-                reviewEntity.CreatedDate = DateTime.UtcNow;
-
-                await _productRepository.AddProductReviewAsync(productId, reviewEntity);
-                await _productRepository.SaveChangesAsync();
+                var reviewEntity = await _productReviewService.CreateProductReviewAsync(productId, review, currentUserId);
 
                 var createdReviewToReturn = _mapper.Map<ProductReviewDto>(reviewEntity);
 
                 return CreatedAtRoute("GetProductReview",
                     new { productId = productId, reviewId = createdReviewToReturn.Id },
                     createdReviewToReturn);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
@@ -139,23 +151,21 @@ namespace EcommerceProduct.API.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult> ApproveProductReview(int productId, int reviewId, [FromBody] bool approve)
         {
-            if (!await _productRepository.ProductExistsAsync(productId))
+            try
             {
-                return NotFound("Product not found.");
+                var updated = await _productReviewService.ApproveProductReviewAsync(productId, reviewId, approve);
+
+                if (!updated)
+                {
+                    return NotFound("Product or review not found.");
+                }
+
+                return NoContent();
             }
-
-            var reviewEntity = await _productRepository.GetProductReviewAsync(productId, reviewId);
-
-            if (reviewEntity == null)
+            catch (Exception ex)
             {
-                return NotFound("Review not found.");
+                return StatusCode(500, $"An error occurred while updating the review: {ex.Message}");
             }
-
-            reviewEntity.IsApproved = approve;
-            _productRepository.UpdateProductReview(reviewEntity);
-            await _productRepository.SaveChangesAsync();
-
-            return NoContent();
         }
 
         /// <summary>
@@ -170,35 +180,26 @@ namespace EcommerceProduct.API.Controllers
         {
             try
             {
-                if (!await _productRepository.ProductExistsAsync(productId))
+                var currentUserId = GetCurrentUserId();
+                var userRole = User.FindFirst("role_name")?.Value;
+                var isAdmin = userRole == "Admin";
+
+                var deleted = await _productReviewService.DeleteProductReviewAsync(productId, reviewId, currentUserId, isAdmin);
+
+                if (!deleted)
                 {
-                    return NotFound("Product not found.");
+                    return NotFound("Product or review not found.");
                 }
-
-                var reviewEntity = await _productRepository.GetProductReviewAsync(productId, reviewId);
-
-                if (reviewEntity == null)
-                {
-                    return NotFound("Review not found.");
-                }
-
-                var currentUserId = int.Parse(User.FindFirst("sub")?.Value ?? "0");
-                var userRole = User.FindFirst("role")?.Value;
-
-                // Check if user can delete this review
-                if (userRole != "Admin")
-                {
-                    var user = await _userRepository.GetUserWithCustomerAsync(currentUserId);
-                    if (user?.Email != reviewEntity.CustomerEmail)
-                    {
-                        return Forbid("You can only delete your own reviews.");
-                    }
-                }
-
-                _productRepository.DeleteProductReview(reviewEntity);
-                await _productRepository.SaveChangesAsync();
 
                 return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return NotFound(ex.Message);
             }
             catch (Exception ex)
             {
