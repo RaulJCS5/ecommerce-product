@@ -17,15 +17,19 @@ namespace EcommerceProduct.API.Repository.Implementation
         public async Task<IEnumerable<ProductReview>> GetProductReviewsAsync(int productId)
         {
             return await _context.ProductReviews
-                .Where(r => r.ProductId == productId && r.IsApproved)
-                .OrderByDescending(r => r.CreatedDate)
+                .Where(r => r.ProductId == productId)
+                .Include(r => r.Product!)
+                    .ThenInclude(p => p.Category!)
                 .ToListAsync();
         }
 
         public async Task<ProductReview?> GetProductReviewAsync(int productId, int reviewId)
         {
             return await _context.ProductReviews
-                .FirstOrDefaultAsync(r => r.ProductId == productId && r.Id == reviewId);
+                .Where(r => r.ProductId == productId && r.Id == reviewId)
+                .Include(r => r.Product!)
+                    .ThenInclude(p => p.Category!)
+                .FirstOrDefaultAsync();
         }
 
         public async Task<bool> ProductReviewExistsAsync(int productId, int reviewId)

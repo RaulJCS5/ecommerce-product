@@ -12,5 +12,6 @@ namespace EcommerceProduct.API.Models
         public DateTime CreatedDate { get; set; }
         public bool IsApproved { get; set; }
         public int ProductId { get; set; }
+        public ProductDto? Product { get; set; }
     }
 }

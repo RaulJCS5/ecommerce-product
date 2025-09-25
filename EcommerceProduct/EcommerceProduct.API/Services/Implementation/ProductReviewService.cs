@@ -69,11 +69,19 @@ namespace EcommerceProduct.API.Services.Implementation
             }
 
             // Create review entity
-            var reviewEntity = _mapper.Map<ProductReview>(reviewDto);
-            reviewEntity.CustomerName = $"{user.FirstName} {user.LastName}";
-            reviewEntity.CustomerEmail = user.Email;
-            reviewEntity.CreatedDate = DateTime.UtcNow;
-            reviewEntity.IsApproved = false; // Reviews need approval by default
+
+            var reviewEntity = new ProductReview(
+                rating: reviewDto.Rating,
+                customerName: $"{user.FirstName} {user.LastName}",
+                productId: productId)
+            {
+                CustomerEmail = user.Email,
+                Comment = reviewDto.Comment,
+                CreatedDate = DateTime.UtcNow,
+                IsApproved = false
+            };
+
+
 
             _productReviewRepository.AddProductReviewAsync(productId, reviewEntity);
             await _productReviewRepository.SaveChangesAsync();

@@ -8,8 +8,13 @@ namespace EcommerceProduct.API.Profiles
     {
         public ProductReviewProfile()
         {
-            CreateMap<ProductReview, ProductReviewDto>();
-            CreateMap<ProductReviewForCreationDto, ProductReview>();
+            CreateMap<ProductReview, ProductReviewDto>()
+                .ForMember(dest => dest.Product, opt => opt.MapFrom(src => src.Product))
+                .MaxDepth(2); // Prevent infinite recursion
+
+            CreateMap<ProductReviewForCreationDto, ProductReview>()
+                .ForMember(dest => dest.ProductId, opt => opt.Ignore())
+                .ForMember(dest => dest.Product, opt => opt.Ignore());
         }
     }
 }
