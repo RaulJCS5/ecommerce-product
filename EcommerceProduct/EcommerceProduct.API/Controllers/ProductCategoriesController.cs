@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using EcommerceProduct.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using EcommerceProduct.API.Repository.Interface;
+using EcommerceProduct.API.Services.Interface;
 
 namespace EcommerceProduct.API.Controllers
 {
@@ -11,12 +12,12 @@ namespace EcommerceProduct.API.Controllers
     [Route("api/categories")]
     public class ProductCategoriesController : ControllerBase
     {
-        private readonly IProductRepository _productRepository;
         private readonly IMapper _mapper;
+        private readonly IProductCategoriesService _productCategoriesService;
 
-        public ProductCategoriesController(IProductRepository productRepository, IMapper mapper)
+        public ProductCategoriesController(IProductCategoriesService productCategoriesService, IMapper mapper)
         {
-            _productRepository = productRepository ?? throw new ArgumentNullException(nameof(productRepository));
+            _productCategoriesService = productCategoriesService ?? throw new ArgumentNullException(nameof(productCategoriesService));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
@@ -30,7 +31,7 @@ namespace EcommerceProduct.API.Controllers
         {
             try
             {
-                var categoryEntities = await _productRepository.GetProductCategoriesAsync();
+                var categoryEntities = await _productCategoriesService.GetAllCategoriesAsync();
                 return Ok(_mapper.Map<IEnumerable<ProductCategoryDto>>(categoryEntities));
             }
             catch (Exception ex)
@@ -56,7 +57,7 @@ namespace EcommerceProduct.API.Controllers
                     return BadRequest("Category ID must be greater than 0.");
                 }
 
-                var categoryEntity = await _productRepository.GetProductCategoryAsync(categoryId, includeProducts);
+                var categoryEntity = await _productCategoriesService.GetCategoryByIdAsync(categoryId, includeProducts);
 
                 if (categoryEntity == null)
                 {
@@ -64,6 +65,10 @@ namespace EcommerceProduct.API.Controllers
                 }
 
                 return Ok(_mapper.Map<ProductCategoryDto>(categoryEntity));
+            }
+            catch (ArgumentException argEx)
+            {
+                return BadRequest(argEx.Message);
             }
             catch (Exception ex)
             {
@@ -93,32 +98,11 @@ namespace EcommerceProduct.API.Controllers
                     return BadRequest(ModelState);
                 }
 
-                // Additional business validation
-                if (string.IsNullOrWhiteSpace(category.Name?.Trim()))
-                {
-                    return BadRequest("Category name cannot be empty or whitespace only.");
-                }
-
-                // Create and configure the entity
-                var categoryEntity = _mapper.Map<Entities.ProductCategory>(category);
-
-                // Add to repository (includes duplicate checking)
-                var addResult = await _productRepository.AddProductCategoryAsync(categoryEntity);
-                
-                if (!addResult)
-                {
-                    return BadRequest($"A category with the name '{categoryEntity.Name}' already exists.");
-                }
-
-                var saveResult = await _productRepository.SaveChangesAsync();
-
-                if (!saveResult)
-                {
-                    return StatusCode(500, "Failed to save the category to the database.");
-                }
+                // Create through service (includes validation and business logic)
+                var createdCategory = await _productCategoriesService.CreateCategoryAsync(category);
 
                 // Map to DTO for response
-                var createdCategoryToReturn = _mapper.Map<ProductCategoryDto>(categoryEntity);
+                var createdCategoryToReturn = _mapper.Map<ProductCategoryDto>(createdCategory);
 
                 // Return created response with location header
                 return CreatedAtRoute("GetProductCategory",
@@ -132,15 +116,14 @@ namespace EcommerceProduct.API.Controllers
             }
             catch (InvalidOperationException opEx)
             {
-                // Handle business logic violations
+                // Handle business logic violations (like duplicate names)
                 return Conflict($"Operation failed: {opEx.Message}");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 // Log the full exception (in real application, use proper logging)
                 // _logger.LogError(ex, "Error creating product category: {@Category}", category);
-                
-                return StatusCode(500, "An unexpected error occurred while creating the product category. Please try again later.");
+                return StatusCode(500, $"An unexpected error occurred while creating the product category: {ex.Message}");
             }
         }
 
@@ -166,17 +149,22 @@ namespace EcommerceProduct.API.Controllers
                     return BadRequest("Category ID must be greater than 0.");
                 }
 
-                var categoryEntity = await _productRepository.GetProductCategoryAsync(categoryId);
-                if (categoryEntity == null)
+                var updateResult = await _productCategoriesService.UpdateCategoryAsync(categoryId, category);
+
+                if (!updateResult)
                 {
                     return NotFound("Product category not found.");
                 }
 
-                _mapper.Map(category, categoryEntity);
-                _productRepository.UpdateProductCategory(categoryEntity);
-                await _productRepository.SaveChangesAsync();
-
                 return NoContent();
+            }
+            catch (ArgumentException argEx)
+            {
+                return BadRequest($"Invalid input: {argEx.Message}");
+            }
+            catch (InvalidOperationException opEx)
+            {
+                return Conflict($"Operation failed: {opEx.Message}");
             }
             catch (Exception ex)
             {
@@ -200,22 +188,22 @@ namespace EcommerceProduct.API.Controllers
                     return BadRequest("Category ID must be greater than 0.");
                 }
 
-                var categoryEntity = await _productRepository.GetProductCategoryAsync(categoryId, includeProducts: true);
-                if (categoryEntity == null)
+                var deleteResult = await _productCategoriesService.DeleteCategoryAsync(categoryId);
+
+                if (!deleteResult)
                 {
                     return NotFound("Product category not found.");
                 }
 
-                // Check if category has products
-                if (categoryEntity.Products.Any())
-                {
-                    return BadRequest("Cannot delete category that contains products. Please reassign or delete products first.");
-                }
-
-                _productRepository.DeleteProductCategory(categoryEntity);
-                await _productRepository.SaveChangesAsync();
-
                 return NoContent();
+            }
+            catch (ArgumentException argEx)
+            {
+                return BadRequest(argEx.Message);
+            }
+            catch (InvalidOperationException opEx)
+            {
+                return BadRequest(opEx.Message); // Business logic errors like "category has products"
             }
             catch (Exception ex)
             {
