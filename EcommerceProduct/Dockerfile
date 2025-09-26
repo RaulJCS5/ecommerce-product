@@ -25,6 +25,21 @@ RUN dotnet publish "./EcommerceProduct.API.csproj" -c $BUILD_CONFIGURATION -o /a
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
+
+# begin for http only
+# ENV ASPNETCORE_URLS=http://+:5001
+# ENV ASPNET_HTTP_PORTS=5001
+# end for http only
+
+# begin for https and http
+ENV ASPNETCORE_URLS=https://+:5001;http://+:5000
+ENV ASPNET_HTTPS_PORTS=5001
+ENV ASPNET_HTTP_PORTS=5000
+ENV ASPNETCORE_Kestrel__Certificates__Default__Password=<YourPasswordHere>
+ENV ASPNETCORE_Kestrel__Certificates__Default__Path=/app/aspnetapp.pfx
+EXPOSE 5000
+# end for https and http
+EXPOSE 5001
 WORKDIR /app
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "EcommerceProduct.API.dll"]
